@@ -158,11 +158,27 @@ function sanitizeArray<T>(arr: any): T[] {
   return rawList.filter((item: any) => item !== null && typeof item === 'object') as T[];
 }
 
+function removeUndefinedRecursive(obj: any): any {
+  if (Array.isArray(obj)) {
+    return obj.map(item => removeUndefinedRecursive(item));
+  } else if (obj !== null && typeof obj === 'object') {
+    const cleaned: any = {};
+    for (const key of Object.keys(obj)) {
+      const value = obj[key];
+      if (value !== undefined) {
+        cleaned[key] = removeUndefinedRecursive(value);
+      }
+    }
+    return cleaned;
+  }
+  return obj;
+}
+
 export function sanitizeData(data: any): AppData {
   if (!data || typeof data !== 'object') {
     return initialMockData;
   }
-  return {
+  const raw = {
     students: sanitizeArray<Student>(data.students),
     teachers: sanitizeArray<Teacher>(data.teachers),
     groups: sanitizeArray<Group>(data.groups),
@@ -180,6 +196,8 @@ export function sanitizeData(data: any): AppData {
       password: data.centerSettings.password ? String(data.centerSettings.password) : undefined
     } : undefined
   };
+
+  return removeUndefinedRecursive(raw);
 }
 
 // Load from local storage
@@ -199,11 +217,82 @@ export function getLocalData(): AppData {
 }
 
 // Save directly to LocalStorage + Sync with Firebase RTDB
+let activeStatusCallback: ((status: 'connected' | 'connecting' | 'permission-denied' | 'error' | 'offline', errorMsg?: string) => void) | null = null;
+
+function updateStatus(status: 'connected' | 'connecting' | 'permission-denied' | 'error' | 'offline', msg?: string) {
+  if (activeStatusCallback) {
+    activeStatusCallback(status, msg);
+  }
+}
+
+/**
+ * Test the live read/write connection to Firebase Realtime Database
+ * by writing to a test node and reading it back.
+ */
+export async function testFirebaseConnection(): Promise<{ success: boolean; message: string; latency?: number }> {
+  if (!isFirebaseConnected || !db) {
+    return { 
+      success: false, 
+      message: "لم يتم تهيئة الـ SDK الخاص بـ Firebase بشكل سليم أو السحابة معطلة محلياً." 
+    };
+  }
+
+  const startTime = Date.now();
+  try {
+    // 1. Try to write a tiny test ping
+    const testPingRef = ref(db, 'firebase_connection_pings/' + Date.now());
+    await set(testPingRef, {
+      timestamp: new Date().toISOString(),
+      clientTime: startTime,
+      operator: "فحص الاتصال التلقائي"
+    });
+
+    // 2. Try to read it back to confirm full read-write loop works
+    const snapshot = await get(testPingRef);
+    const latency = Date.now() - startTime;
+
+    if (snapshot.exists()) {
+      updateStatus('connected');
+      return {
+        success: true,
+        message: `تم الاتصال بنجاح! السحابة تعمل بكل طاقتها وزمن الاستجابة هو ${latency}ms والمزامنة نشطة ولحظية.`,
+        latency
+      };
+    } else {
+      return {
+        success: false,
+        message: "تم حفظ بيانات الفحص ولكن لم نتمكن من قراءتها مجدداً! يرجى فحص صلاحيات وقواعد القراءة والقسم الخاص بالـ Rules."
+      };
+    }
+  } catch (err: any) {
+    console.error("Firebase connection test error details:", err);
+    let arabicMsg = "فشل الاتصال: خطأ غير معروف أثناء الاتصال بالسيرفر.";
+    
+    if (err.message) {
+      if (err.message.includes("PERMISSION_DENIED") || err.message.toLowerCase().includes("permission") || err.name === 'Error') {
+        arabicMsg = "فشل الاتصال بسبب قواعد الحماية (Permission Denied): يرجى مراجعة الـ Rules في كونسول الـ Firebase وتفعيل '.read: true' و '.write: true'.";
+        updateStatus('permission-denied', arabicMsg);
+      } else if (err.message.includes("network") || err.message.toLowerCase().includes("network")) {
+        arabicMsg = "فشل الاتصال: يرجى التحقق من اتصال الإنترنت بجهازك.";
+        updateStatus('offline', arabicMsg);
+      } else {
+        arabicMsg = `فشل الاتصال بالسيرفر: ${err.message}`;
+        updateStatus('error', arabicMsg);
+      }
+    }
+    
+    return {
+      success: false,
+      message: arabicMsg
+    };
+  }
+}
+
 export async function saveAppData(data: AppData, actionDescription?: string, category: AuditLog['category'] = 'system') {
   // Sanitize before saving
   const cleanData = sanitizeData(data);
 
-  // Always update local storage first (instant sub-millisecond save)
+  // Always update local storage first (instant sub-millisecond local resilience)
   localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanData));
 
   // Add audit log for this save if action is provided
@@ -220,23 +309,49 @@ export async function saveAppData(data: AppData, actionDescription?: string, cat
     localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanData));
   }
 
-  // Push to Firebase RTDB in background
+  // Push to Firebase RTDB instantly using set to guarantee real-time server-side synchronization
   if (isFirebaseConnected && db) {
     try {
       const dbRef = ref(db, 'center_management_data');
       await set(dbRef, cleanData);
-    } catch (e) {
-      console.warn("Could not sync with Firebase database. Operating offline.", e);
+      updateStatus('connected');
+    } catch (err: any) {
+      console.warn("Could not sync with Firebase database. Operating offline.", err);
+      if (err.message && (err.message.includes('PERMISSION_DENIED') || err.message.toLowerCase().includes('permission') || err.name === 'Error')) {
+        updateStatus('permission-denied', 'فشلت عملية الحفظ: قواعد البيانات (Rules) تمنع الكتابة العامة. يرجى تعديلها في كونسول Firebase إلى true.');
+      } else {
+        updateStatus('error', err.message || 'خطأ أثناء مزامنة البيانات السحابية');
+      }
     }
   }
 }
 
 // Real-time synchronization wrapper
-export function setupFirebaseListener(onDataUpdated: (data: AppData) => void): () => void {
+export function setupFirebaseListener(
+  onDataUpdated: (data: AppData) => void,
+  onStatusUpdated?: (status: 'connected' | 'connecting' | 'permission-denied' | 'error' | 'offline', errorMsg?: string) => void
+): () => void {
+  if (onStatusUpdated) {
+    activeStatusCallback = onStatusUpdated;
+    activeStatusCallback('connecting');
+  }
+
   if (isFirebaseConnected && db) {
     const dbRef = ref(db, 'center_management_data');
-    return onValue(dbRef, (snapshot) => {
+    
+    // Listen to /.info/connected
+    const connectedRef = ref(db, '.info/connected');
+    const unsubscribeConnected = onValue(connectedRef, (snap) => {
+      if (snap.val() === true) {
+        updateStatus('connected');
+      } else {
+        updateStatus('offline', 'أنت تعمل في وضع عدم الاتصال بالإنترنت حالياً');
+      }
+    });
+
+    const unsubscribeData = onValue(dbRef, (snapshot) => {
       const data = snapshot.val();
+      updateStatus('connected');
       if (data) {
         const sanitized = sanitizeData(data);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
@@ -244,14 +359,36 @@ export function setupFirebaseListener(onDataUpdated: (data: AppData) => void): (
       } else {
         // Realtime DB has no data yet, initialize it
         const localData = getLocalData();
-        set(dbRef, localData).catch(err => console.error("Error setting initial Firebase structure:", err));
+        set(dbRef, localData)
+          .then(() => {
+            updateStatus('connected');
+          })
+          .catch((err: any) => {
+            console.error("Error setting initial Firebase structure:", err);
+            if (err.message && (err.message.includes('PERMISSION_DENIED') || err.message.toLowerCase().includes('permission'))) {
+              updateStatus('permission-denied', 'فشل الإعداد الأولي: يرجى فتح الصلاحيات (Rules) بالقراءة والكتابة في كونسول Firebase.');
+            } else {
+              updateStatus('error', err.message || 'خطأ غير معروف في مزامنة قاعدة البيانات');
+            }
+          });
       }
     }, (error) => {
       console.error("Firebase listener error:", error);
+      if (error.message && (error.message.includes('PERMISSION_DENIED') || error.message.toLowerCase().includes('permission') || error.message.toLowerCase().includes('denied'))) {
+        updateStatus('permission-denied', 'خطأ في قواعد الحماية (Permission Denied): يرجى تعديل Rules في Firebase Console إلى "read: true, write: true" للعمل سحابياً.');
+      } else {
+        updateStatus('error', error.message || 'فشلت المزامنة السحابية مع السيرفر');
+      }
     });
+
+    return () => {
+      unsubscribeConnected();
+      unsubscribeData();
+      activeStatusCallback = null;
+    };
   }
   
-  // Return dummy unsubscribe if Firebase runs offline
+  updateStatus('offline', 'تم تعطيل السحابة أو أنها غير مهيأة بشكل صحيح');
   return () => {};
 }
 

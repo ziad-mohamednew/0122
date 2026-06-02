@@ -30,7 +30,7 @@ import {
 import { Student, Teacher, Group, Payment, AttendanceRecord, AuditLog, AppData, CenterSettings } from './types';
 
 // Import Firebase API Synchronizer
-import { getLocalData, saveAppData, setupFirebaseListener, isFirebaseSyncing } from './firebase';
+import { getLocalData, saveAppData, setupFirebaseListener, isFirebaseSyncing, testFirebaseConnection } from './firebase';
 
 // Import Tabs Components
 import Dashboard from './components/Dashboard';
@@ -96,6 +96,33 @@ export default function App() {
   });
 
   const [isFirebaseConnected, setIsFirebaseConnected] = useState(false);
+  const [firebaseStatus, setFirebaseStatus] = useState<'connected' | 'connecting' | 'permission-denied' | 'error' | 'offline'>('connecting');
+  const [firebaseError, setFirebaseError] = useState('');
+  const [showFirebaseHelp, setShowFirebaseHelp] = useState(false);
+
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string; latency?: number } | null>(null);
+  const [isTestingConnection, setIsTestingConnection] = useState(false);
+
+  const triggerFirebaseTest = async () => {
+    setIsTestingConnection(true);
+    setTestResult(null);
+    try {
+      const res = await testFirebaseConnection();
+      setTestResult(res);
+    } catch (err: any) {
+      setTestResult({
+        success: false,
+        message: err.message || "عذراً، فشل اختبار الاتصال بقاعدة بيانات Firebase."
+      });
+    } finally {
+      setIsTestingConnection(false);
+    }
+  };
+
+  const openFirebaseHelp = () => {
+    setTestResult(null);
+    setShowFirebaseHelp(true);
+  };
 
   // Load Initial state and setup Firebase realtime synchronization listener
   useEffect(() => {
@@ -104,9 +131,12 @@ export default function App() {
     setState(localData);
 
     // 2. Setup Firebase synchronous updates (if database URL allows connectivity)
-    setIsFirebaseConnected(isFirebaseSyncing());
     const unsubscribe = setupFirebaseListener((updatedData) => {
       setState(updatedData);
+    }, (status, errorMsg) => {
+      setFirebaseStatus(status);
+      setFirebaseError(errorMsg || '');
+      setIsFirebaseConnected(status === 'connected');
     });
 
     return () => {
@@ -126,23 +156,23 @@ export default function App() {
   const [isSystemLocked, setIsSystemLocked] = useState(false);
   const [lastBackupTime, setLastBackupTime] = useState<string | null>(null);
 
-  // System lock & Password configurations
-  const [isAppPasswordLocked, setIsAppPasswordLocked] = useState<boolean | null>(null);
+  // System lock & Password configurations (Tied securely to Firebase database settings)
+  const [unlockedPassword, setUnlockedPassword] = useState<string>(() => {
+    try {
+      return sessionStorage.getItem('educenter_unlocked_password') || '';
+    } catch {
+      return '';
+    }
+  });
   const [typedPassword, setTypedPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
 
-  // Lock status effect on first load
-  useEffect(() => {
-    if (state.centerSettings?.initialized) {
-      if (isAppPasswordLocked === null) {
-        if (state.centerSettings.password && state.centerSettings.password.trim() !== '') {
-          setIsAppPasswordLocked(true);
-        } else {
-          setIsAppPasswordLocked(false);
-        }
-      }
-    }
-  }, [state.centerSettings, isAppPasswordLocked]);
+  // Dynamically determine lock state based on active Firebase configuration
+  const isAppPasswordLocked = Boolean(
+    state.centerSettings?.password && 
+    state.centerSettings.password.trim() !== '' && 
+    unlockedPassword !== state.centerSettings.password.trim()
+  );
 
   // Core execution daily backup and export JSON
   const executeBackupDaily = async (showUINotifications = true) => {
@@ -417,6 +447,15 @@ export default function App() {
   };
 
   const handleSaveCenterSettings = (settings: CenterSettings) => {
+    if (settings.password && settings.password.trim() !== '') {
+      const activePass = settings.password.trim();
+      setUnlockedPassword(activePass);
+      try {
+        sessionStorage.setItem('educenter_unlocked_password', activePass);
+      } catch (err) {
+        console.warn("sessionStorage error:", err);
+      }
+    }
     handleStateChange({
       ...state,
       centerSettings: settings
@@ -507,8 +546,14 @@ export default function App() {
           <form 
             onSubmit={(e) => {
               e.preventDefault();
-              if (typedPassword.trim() === state.centerSettings?.password?.trim()) {
-                setIsAppPasswordLocked(false);
+              const targetPassword = state.centerSettings?.password?.trim() || '';
+              if (typedPassword.trim() === targetPassword) {
+                setUnlockedPassword(targetPassword);
+                try {
+                  sessionStorage.setItem('educenter_unlocked_password', targetPassword);
+                } catch (err) {
+                  console.warn("sessionStorage error:", err);
+                }
                 setPasswordError('');
               } else {
                 setPasswordError('❌ الرقم السري للسنتر غير صحيح، يرجى المحاولة مجدداً!');
@@ -690,15 +735,62 @@ export default function App() {
 
         {/* Sticky footer user profile info / Live Status */}
         <div className="p-4 bg-slate-950 border-t border-slate-800 text-xs text-slate-400">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              <span className="text-[10px] font-bold text-emerald-400">مُتصل بالسحابة</span>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              {firebaseStatus === 'connected' && (
+                <div className="flex items-center gap-2">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  <span className="text-[10px] font-bold text-emerald-400">مُتصل وسحابي لحظي</span>
+                </div>
+              )}
+              {firebaseStatus === 'connecting' && (
+                <div className="flex items-center gap-2">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-pulse absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                  </span>
+                  <span className="text-[10px] font-bold text-amber-400">جاري الاتصال بالسحاب...</span>
+                </div>
+              )}
+              {firebaseStatus === 'permission-denied' && (
+                <button
+                  type="button"
+                  onClick={openFirebaseHelp}
+                  className="flex items-center gap-1.5 bg-rose-500/10 border border-rose-500/20 px-2 py-1 rounded-lg text-rose-400 text-[10px] font-bold animate-pulse cursor-pointer hover:bg-rose-500/20 text-right"
+                >
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></span>
+                  <span>خطأ قواعد (اضغط للحل) ⚠️</span>
+                </button>
+              )}
+              {firebaseStatus === 'error' && (
+                <button
+                  type="button"
+                  onClick={openFirebaseHelp}
+                  className="flex items-center gap-1.5 bg-rose-500/10 border border-rose-550/20 px-2 py-1 rounded-lg text-rose-400 text-[10px] font-bold cursor-pointer hover:bg-rose-500/20 text-right"
+                >
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></span>
+                  <span>فشل الاتصال (دليل الحل)</span>
+                </button>
+              )}
+              {firebaseStatus === 'offline' && (
+                <div className="flex items-center gap-2">
+                  <span className="relative flex h-2 w-2 border border-slate-700 rounded-full">
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-slate-500"></span>
+                  </span>
+                  <span className="text-[10px] font-bold text-slate-400">تعمل محلياً (أوفلاين)</span>
+                </div>
+              )}
+              <span className="text-[9px] font-mono text-slate-500">v1.2.0</span>
             </div>
-            <span className="text-[9px] font-mono text-slate-500">v1.2.0</span>
+            
+            {(firebaseStatus === 'permission-denied' || firebaseStatus === 'error') && (
+              <p className="text-[9px] text-rose-400/80 leading-relaxed select-none">
+                برجاء تعديل القواعد في Firebase Console إلى Rules: read/write = true لتمكين حفظ بياناتك تلقائياً وسحابياً.
+              </p>
+            )}
           </div>
         </div>
       </aside>
@@ -983,6 +1075,124 @@ export default function App() {
         onConfirm={confirmState.onConfirm}
         onCancel={() => setConfirmState(prev => ({ ...prev, isOpen: false }))}
       />
+
+      {/* Firebase Rules Help Modal */}
+      {showFirebaseHelp && (
+        <div className="fixed inset-0 z-55 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs font-sans text-right text-slate-100" dir="rtl">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl p-6 shadow-2xl space-y-4 relative overflow-hidden"
+          >
+            <div className="flex items-center gap-3 border-b border-slate-800 pb-4 justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-xl flex items-center justify-center text-lg shrink-0">
+                  ☁️
+                </div>
+                <div>
+                  <h3 className="font-bold text-white text-sm">حل مشكلة عدم الحفظ السحابي في Firebase</h3>
+                  <p className="text-[10px] text-indigo-400">تفعيل واستقبال البيانات في قاعدة بيانات السنتر</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowFirebaseHelp(false)}
+                className="text-slate-400 hover:text-white text-xs bg-slate-850 px-2.5 py-1.5 rounded-lg border border-slate-800 cursor-pointer"
+              >
+                إغلاق
+              </button>
+            </div>
+
+            <div className="text-xs space-y-3 leading-relaxed text-slate-300">
+              <p className="font-bold text-amber-400">
+                ⚠️ سبب المشكلة: قواعد الحماية (Rules) في حساب الـ Firebase تمنع القراءة أو الكتابة بدون تسجيل دخول.
+              </p>
+              
+              <p>لتفعيل الحفظ والمزامنة التلقائية واللحظية فوراً، يرجى اتباع الخطوات التالية البسيطة في دقيقة واحدة:</p>
+              
+              <ol className="list-decimal list-inside space-y-2 text-slate-400 mr-2">
+                <li>افتح موقع <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="text-indigo-400 font-bold underline">مجلد تحكم Firebase Console</a>.</li>
+                <li>اختر مشروعك <span className="text-slate-200 font-bold">center-management-legislator</span>.</li>
+                <li>من القائمة الجانبية، اذهب إلى <span className="text-slate-200 font-bold">Build</span> ثم اضغط على <span className="text-indigo-400 font-bold">Realtime Database</span>.</li>
+                <li>اضغط على التبويب العلوي المسمى <span className="text-amber-400 font-bold">Rules</span> (القواعد).</li>
+                <li>قم باستبدال القواعد الموجودة هناك بـ المجموع التالي حرفياً:</li>
+              </ol>
+
+              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-left text-[11.5px] font-mono text-emerald-400 overflow-x-auto select-all">
+{`{
+  "rules": {
+    ".read": "true",
+    ".write": "true"
+  }
+}`}
+              </div>
+
+              <div className="bg-slate-950/40 p-3 rounded-2xl border border-indigo-500/10 text-right mt-2 space-y-1">
+                <p className="font-bold text-indigo-400 flex items-center gap-1.5">
+                  <span>ℹ️ حالة الخطأ الحالية المستلمة من Firebase:</span>
+                </p>
+                <div className="text-[11px] font-mono text-rose-400 bg-rose-500/5 p-2 rounded-lg border border-rose-500/10 truncate" title={firebaseError}>
+                  {firebaseError || "PERMISSION_DENIED: Client does not have permission to perform this operation."}
+                </div>
+              </div>
+
+              {/* Dynamic Connection Test Module */}
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3 mt-4 text-center">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-slate-400">أداة فحص الاتصال التلقائي بالأقمار</span>
+                  <button
+                    type="button"
+                    onClick={triggerFirebaseTest}
+                    disabled={isTestingConnection}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold py-1.5 px-3 rounded-lg transition disabled:bg-slate-800 disabled:text-slate-500 cursor-pointer flex items-center gap-1 shrink-0"
+                  >
+                    {isTestingConnection ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>جاري الفحص...</span>
+                      </>
+                    ) : (
+                      <span>⚡ فحص الاتصال وقواعد الـ Rules</span>
+                    )}
+                  </button>
+                </div>
+
+                {testResult && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`p-3 rounded-xl text-xs font-bold text-right leading-relaxed ${
+                      testResult.success
+                        ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"
+                        : "bg-rose-500/10 border border-rose-500/20 text-rose-400"
+                    }`}
+                  >
+                    <p className="flex items-start gap-1.5 font-sans">
+                      <span className="shrink-0">{testResult.success ? "🟢" : "🔴"}</span>
+                      <span>{testResult.message}</span>
+                    </p>
+                    {testResult.latency !== undefined && (
+                      <p className="text-[10px] text-emerald-500/70 font-mono mt-1 text-left" dir="ltr">
+                        Latency: {testResult.latency}ms
+                      </p>
+                    )}
+                  </motion.div>
+                )}
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-slate-800 flex justify-between items-center">
+              <span className="text-[10px] text-slate-500 font-medium">EduCenter Cloud Utility</span>
+              <button
+                type="button"
+                onClick={() => setShowFirebaseHelp(false)}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-5 rounded-xl text-xs transition cursor-pointer"
+              >
+                حسناً، قمت بالتعديل
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
 
     </div>
   );
