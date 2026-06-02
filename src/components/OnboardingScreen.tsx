@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Building2, MapPin, Phone, Check, FolderOpen, Image, Lock } from 'lucide-react';
+import { Building2, MapPin, Phone, Check, FolderOpen, Image, Lock, X } from 'lucide-react';
 import { CenterSettings } from '../types';
 
 interface OnboardingScreenProps {
   onSave: (settings: CenterSettings) => void;
   initialSettings?: CenterSettings;
+  onClose?: () => void;
 }
 
-export default function OnboardingScreen({ onSave, initialSettings }: OnboardingScreenProps) {
+export default function OnboardingScreen({ onSave, initialSettings, onClose }: OnboardingScreenProps) {
   const [name, setName] = useState(initialSettings?.name || '');
   const [address, setAddress] = useState(initialSettings?.address || '');
   const [phone, setPhone] = useState(initialSettings?.phone || '');
@@ -66,35 +67,53 @@ export default function OnboardingScreen({ onSave, initialSettings }: Onboarding
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950 font-sans" dir="rtl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md font-sans overflow-y-auto" dir="rtl">
       {/* Background visual graphics */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(99,102,241,0.15),rgba(255,255,255,0))] select-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(99,102,241,0.15),rgba(255,255,255,0))] select-none pointer-events-none" />
 
       <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ type: "spring", stiffness: 100, damping: 15 }}
-        className="relative bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl p-6 sm:p-8 shadow-2xl text-center z-10 overflow-hidden"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="relative bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl p-6 sm:p-8 shadow-2xl text-center my-8 z-10 overflow-hidden"
       >
+        {/* Optional Close Button */}
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute top-4 left-4 bg-slate-800 hover:bg-slate-700 text-slate-300 p-2 rounded-xl transition cursor-pointer z-50"
+            title="إغلاق التفضيلات"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
+
         {/* Decorative corner lights */}
-        <div className="absolute -top-12 -left-12 w-24 h-24 bg-indigo-500/20 rounded-full blur-xl" />
-        <div className="absolute -bottom-12 -right-12 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl" />
+        <div className="absolute -top-12 -left-12 w-24 h-24 bg-indigo-500/20 rounded-full blur-xl pointer-events-none" />
+        <div className="absolute -bottom-12 -right-12 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl pointer-events-none" />
 
         <div className="flex flex-col items-center">
           {/* Logo badge */}
-          <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center text-white text-2xl font-extrabold shadow-lg shadow-indigo-600/20 mb-4 animate-bounce">
-            ED
+          <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center text-white text-2xl font-extrabold shadow-lg shadow-indigo-600/20 mb-4 overflow-hidden font-sans">
+            {logoUrl ? (
+              <img src={logoUrl} alt="Center Logo" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+            ) : (
+              <span>ED</span>
+            )}
           </div>
 
           <span className="text-[10px] bg-indigo-500/10 text-indigo-400 font-bold px-3 py-1 rounded-full border border-indigo-500/25 mb-2">
-            مرحباً بك في EduCenter Pro
+            {initialSettings?.initialized ? "تعديل تفضيلات وبيانات السنتر" : "مرحباً بك في EduCenter Pro"}
           </span>
 
           <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight leading-snug">
-            إعداد الهوية للسنتر التعليمي
+            {initialSettings?.initialized ? "إعدادات وهوية السنتر التعليمي" : "إعداد الهوية للسنتر التعليمي"}
           </h2>
-          <p className="text-slate-400 text-xs mt-1.5 max-w-sm font-semibold mx-auto">
-            أهلاً بك! يرجى تهيئة معلومات السنتر التعليمي الخاص بك لتخصيص كشوفات حضور الطلاب، إيصالات الدفع، وطباعة الأكواد فوراً.
+          <p className="text-slate-400 text-xs mt-1.5 max-w-sm font-semibold mx-auto leading-relaxed">
+            {initialSettings?.initialized 
+              ? "قم بتحديث الهوية، اللوجو السنوي، ورقم المرور السري لحماية وتأمين النظام بالكامل ومزامنته سحابياً." 
+              : "أهلاً بك! يرجى تهيئة معلومات السنتر التعليمي الخاص بك لتخصيص كشوفات حضور الطلاب، إيصالات الدفع، وطباعة الأكواد فوراً."
+            }
           </p>
         </div>
 
@@ -264,9 +283,9 @@ export default function OnboardingScreen({ onSave, initialSettings }: Onboarding
           {/* Submit button */}
           <button
             type="submit"
-            className="w-full mt-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/15"
+            className="w-full mt-6 bg-indigo-650 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/15 cursor-pointer"
           >
-            <span>بدء استخدام النظام بنجاح</span>
+            <span>{initialSettings?.initialized ? "حفظ التغييرات الجديدة وتحديث الهوية" : "بدء استخدام النظام السحابي بنجاح"}</span>
             <Check className="w-4 h-4" />
           </button>
         </form>

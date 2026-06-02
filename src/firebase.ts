@@ -173,7 +173,11 @@ export function sanitizeData(data: any): AppData {
       name: String(data.centerSettings.name || ''),
       address: String(data.centerSettings.address || ''),
       phone: String(data.centerSettings.phone || ''),
-      initialized: Boolean(data.centerSettings.initialized)
+      initialized: Boolean(data.centerSettings.initialized),
+      backupDirectoryName: data.centerSettings.backupDirectoryName ? String(data.centerSettings.backupDirectoryName) : undefined,
+      autoBackupEnabled: data.centerSettings.autoBackupEnabled !== undefined ? Boolean(data.centerSettings.autoBackupEnabled) : undefined,
+      logoUrl: data.centerSettings.logoUrl ? String(data.centerSettings.logoUrl) : undefined,
+      password: data.centerSettings.password ? String(data.centerSettings.password) : undefined
     } : undefined
   };
 }

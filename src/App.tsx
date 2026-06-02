@@ -888,21 +888,11 @@ export default function App() {
 
       {/* Settings Edit Overlay Modal */}
       {isSettingsOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs overflow-y-auto">
-          <div className="relative w-full max-w-lg z-50">
-            <button
-              onClick={() => setIsSettingsOpen(false)}
-              className="absolute top-6 left-6 bg-slate-800 hover:bg-slate-700 text-white p-2 rounded-xl z-50 transition shadow-lg cursor-pointer"
-              title="إغلاق"
-            >
-              <X className="w-4 h-4 text-white" />
-            </button>
-            <OnboardingScreen 
-              onSave={handleSaveCenterSettings} 
-              initialSettings={state.centerSettings}
-            />
-          </div>
-        </div>
+        <OnboardingScreen 
+          onSave={handleSaveCenterSettings} 
+          initialSettings={state.centerSettings}
+          onClose={() => setIsSettingsOpen(false)}
+        />
       )}
 
       {/* Interactive Close & Secure System Modal */}
