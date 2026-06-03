@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getDatabase, ref, set, onValue, get } from 'firebase/database';
-import { Student, Teacher, Group, Payment, AttendanceRecord, AuditLog, AppData, CenterSettings, Secretary } from './types';
+import { Student, Teacher, Group, Payment, AttendanceRecord, AuditLog, AppData, CenterSettings, Secretary, Expense } from './types';
 
 // Realtime Database URL provided by the user
 const DATABASE_URL = "https://center-management-legislator-default-rtdb.europe-west1.firebasedatabase.app/";
@@ -137,6 +137,7 @@ const initialMockData: AppData = {
     }
   ],
   secretaries: [],
+  expenses: [],
   auditLogs: [
     {
       id: "audit-1",
@@ -187,6 +188,7 @@ export function sanitizeData(data: any): AppData {
     attendance: sanitizeArray<AttendanceRecord>(data.attendance),
     secretaries: sanitizeArray<Secretary>(data.secretaries),
     auditLogs: sanitizeArray<AuditLog>(data.auditLogs),
+    expenses: sanitizeArray<Expense>(data.expenses),
     centerSettings: data.centerSettings ? {
       name: String(data.centerSettings.name || ''),
       address: String(data.centerSettings.address || ''),

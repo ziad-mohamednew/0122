@@ -43,6 +43,7 @@ export interface Payment {
   teacherIds: string[]; // One or more trainers gets split
   notes: string;
   timestamp: string;
+  operatorName?: string;
 }
 
 export interface AttendanceRecord {
@@ -94,6 +95,17 @@ export interface Secretary {
   };
 }
 
+export interface Expense {
+  id: string;
+  title: string;
+  amount: number;
+  date: string; // YYYY-MM-DD
+  category: string; // e.g., 'rent' | 'salary' | 'utilities' | 'other'
+  notes?: string;
+  timestamp: string;
+  operatorName?: string;
+}
+
 export interface AppData {
   students: Student[];
   teachers: Teacher[];
@@ -103,4 +115,5 @@ export interface AppData {
   auditLogs: AuditLog[];
   secretaries?: Secretary[];
   centerSettings?: CenterSettings;
+  expenses?: Expense[];
 }

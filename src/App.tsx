@@ -24,11 +24,12 @@ import {
   Unlock,
   LogOut,
   Loader2,
-  UserCog
+  UserCog,
+  Calculator
 } from 'lucide-react';
 
 // Import Types
-import { Student, Teacher, Group, Payment, AttendanceRecord, AuditLog, AppData, CenterSettings, Secretary } from './types';
+import { Student, Teacher, Group, Payment, AttendanceRecord, AuditLog, AppData, CenterSettings, Secretary, Expense } from './types';
 
 // Import Firebase API Synchronizer
 import { getLocalData, saveAppData, setupFirebaseListener, isFirebaseSyncing, testFirebaseConnection } from './firebase';
@@ -43,6 +44,7 @@ import AuditTrails from './components/AuditTrails';
 import OnboardingScreen from './components/OnboardingScreen';
 import ConfirmationModal from './components/ConfirmationModal';
 import SecretariesList from './components/SecretariesList';
+import FinancialReports from './components/FinancialReports';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -425,6 +427,12 @@ export default function App() {
 
   // Record Payment receipt
   const handleAddPayment = (payment: Payment) => {
+    const operatorName = currentSecretary ? `${currentSecretary.name}` : "المدير العام";
+    const paymentWithOperator = {
+      ...payment,
+      operatorName
+    };
+
     // 1. Update Student's internal positive financial balance or reduce negative dues balance.
     const updatedStudents = state.students.map(s => {
       if (s.id === payment.studentId) {
@@ -439,9 +447,32 @@ export default function App() {
     // 2. Add payment node
     handleStateChange({
       ...state,
-      payments: [payment, ...state.payments],
+      payments: [paymentWithOperator, ...state.payments],
       students: updatedStudents
     }, `إصدار إيصال تحصيل مالي ورقي بقيمة ${payment.amount} جنيه للطالب: ${payment.studentName}`, 'payments');
+  };
+
+  // Record General Expense
+  const handleAddExpense = (expense: Expense) => {
+    const operatorName = currentSecretary ? `${currentSecretary.name}` : "المدير العام";
+    const expenseWithOperator = {
+      ...expense,
+      operatorName
+    };
+    const updatedExpenses = [...(state.expenses || []), expenseWithOperator];
+    handleStateChange({
+      ...state,
+      expenses: updatedExpenses
+    }, `تسجيل مستند صرف مالي بقيمة ${expense.amount} جنيه لبيان: ${expense.title}`, 'payments');
+  };
+
+  // Delete General Expense
+  const handleDeleteExpense = (id: string) => {
+    const updatedExpenses = (state.expenses || []).filter(e => e.id !== id);
+    handleStateChange({
+      ...state,
+      expenses: updatedExpenses
+    }, `حذف وإلغاء مستند صرف مالي من السجلات`, 'system');
   };
 
   // Record/Update session attendance check list
@@ -551,6 +582,7 @@ export default function App() {
     (!currentSecretary || currentSecretary.permissions?.students) && { id: 'students', label: 'ملفات الطلاب', icon: Users },
     (!currentSecretary || currentSecretary.permissions?.groups) && { id: 'groups', label: 'المجموعات والمعلمين', icon: Layers },
     (!currentSecretary || currentSecretary.permissions?.payments) && { id: 'payments', label: 'الحسابات والفوترة', icon: DollarSign },
+    (!currentSecretary || currentSecretary.permissions?.payments) && { id: 'financials', label: 'كشف الحسابات', icon: Calculator },
     (!currentSecretary || currentSecretary.permissions?.attendance) && { id: 'attendance', label: 'الحضور والغياب (QR)', icon: UserCheck },
     (!currentSecretary) && { id: 'secretaries', label: 'إدارة السكرتارية', icon: UserCog },
     (!currentSecretary || currentSecretary.permissions?.logs) && { id: 'audit', label: 'النسخ والأمن', icon: ShieldAlert },
@@ -1076,6 +1108,20 @@ export default function App() {
                 attendance={state.attendance}
                 onSaveAttendance={handleSaveAttendance}
                 onUpdateStudentGroups={handleUpdateStudentGroups}
+                showConfirm={showConfirm}
+              />
+            )}
+
+            {activeTab === 'financials' && (
+              <FinancialReports 
+                payments={state.payments}
+                teachers={state.teachers}
+                students={state.students}
+                secretaries={state.secretaries || []}
+                expenses={state.expenses || []}
+                centerSettings={state.centerSettings}
+                onAddExpense={handleAddExpense}
+                onDeleteExpense={handleDeleteExpense}
                 showConfirm={showConfirm}
               />
             )}
