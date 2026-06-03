@@ -19,29 +19,37 @@ interface DashboardProps {
   teachers: Teacher[];
   payments: Payment[];
   onNavigate: (tab: string) => void;
+  currentSecretary?: any;
 }
 
-export default function Dashboard({ students, groups, teachers, payments, onNavigate }: DashboardProps) {
+export default function Dashboard({ students, groups, teachers, payments, onNavigate, currentSecretary }: DashboardProps) {
+  const hasStudentsAccess = !currentSecretary || currentSecretary.permissions?.students;
+  const hasGroupsAccess = !currentSecretary || currentSecretary.permissions?.groups;
+  const hasPaymentsAccess = !currentSecretary || currentSecretary.permissions?.payments;
+
   // Metric Calculators
-  const totalStudents = students.filter(s => s.status === 'active').length;
-  const activeGroups = groups.length;
-  const totalTeachers = teachers.length;
+  const totalStudents = hasStudentsAccess ? students.filter(s => s.status === 'active').length : 0;
+  const activeGroups = hasGroupsAccess ? groups.length : 0;
+  const totalTeachers = hasGroupsAccess ? teachers.length : 0;
 
   const totalRevenue = useMemo(() => {
+    if (!hasPaymentsAccess) return 0;
     return payments.reduce((acc, pay) => acc + pay.amount, 0);
-  }, [payments]);
+  }, [payments, hasPaymentsAccess]);
 
   const totalDuesAndLates = useMemo(() => {
+    if (!hasStudentsAccess || !hasPaymentsAccess) return { count: 0, amount: 0 };
     const defaultStudents = students.filter(s => s.balance < 0);
     const totalDues = defaultStudents.reduce((acc, s) => acc + s.balance, 0);
     return {
       count: defaultStudents.length,
       amount: Math.abs(totalDues)
     };
-  }, [students]);
+  }, [students, hasStudentsAccess, hasPaymentsAccess]);
 
   // Statistics for subject distribution
   const subjectDistribution = useMemo(() => {
+    if (!hasGroupsAccess) return [];
     const subjectsMap: { [key: string]: number } = {};
     groups.forEach(g => {
       subjectsMap[g.subject] = (subjectsMap[g.subject] || 0) + 1;
@@ -50,10 +58,11 @@ export default function Dashboard({ students, groups, teachers, payments, onNavi
       subject,
       count
     }));
-  }, [groups]);
+  }, [groups, hasGroupsAccess]);
 
   // Calculate teacher share (using teacher commission rate)
   const teacherStats = useMemo(() => {
+    if (!hasGroupsAccess || !hasPaymentsAccess) return [];
     const earningsByTeacher: { [id: string]: { name: string; earned: number; subject: string } } = {};
     
     // Initialize teachers
@@ -75,13 +84,14 @@ export default function Dashboard({ students, groups, teachers, payments, onNavi
     });
 
     return Object.values(earningsByTeacher).sort((a, b) => b.earned - a.earned);
-  }, [payments, teachers]);
+  }, [payments, teachers, hasGroupsAccess, hasPaymentsAccess]);
 
   const recentPayments = useMemo(() => {
+    if (!hasPaymentsAccess) return [];
     return [...payments]
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
       .slice(0, 5);
-  }, [payments]);
+  }, [payments, hasPaymentsAccess]);
 
   const containerVariants = {
     hidden: { opacity: 0 },

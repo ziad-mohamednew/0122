@@ -23,11 +23,12 @@ import {
   Lock,
   Unlock,
   LogOut,
-  Loader2
+  Loader2,
+  UserCog
 } from 'lucide-react';
 
 // Import Types
-import { Student, Teacher, Group, Payment, AttendanceRecord, AuditLog, AppData, CenterSettings } from './types';
+import { Student, Teacher, Group, Payment, AttendanceRecord, AuditLog, AppData, CenterSettings, Secretary } from './types';
 
 // Import Firebase API Synchronizer
 import { getLocalData, saveAppData, setupFirebaseListener, isFirebaseSyncing, testFirebaseConnection } from './firebase';
@@ -41,11 +42,20 @@ import AttendanceSheet from './components/AttendanceSheet';
 import AuditTrails from './components/AuditTrails';
 import OnboardingScreen from './components/OnboardingScreen';
 import ConfirmationModal from './components/ConfirmationModal';
+import SecretariesList from './components/SecretariesList';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  // Current logged-in secretary state
+  const [currentSecretary, setCurrentSecretary] = useState<Secretary | null>(null);
+
+  // Login PIN switcher overlay state
+  const [isPinLoginModalOpen, setIsPinLoginModalOpen] = useState(false);
+  const [loginPinText, setLoginPinText] = useState('');
+  const [loginPinError, setLoginPinError] = useState('');
 
   // Custom confirmation modal helper state
   const [confirmState, setConfirmState] = useState<{
@@ -144,10 +154,28 @@ export default function App() {
     };
   }, []);
 
+  // Safety redirect for unprivileged tabs in secretary mode
+  useEffect(() => {
+    if (currentSecretary) {
+      const allowed = 
+        activeTab === 'dashboard' ||
+        (activeTab === 'students' && currentSecretary.permissions?.students) ||
+        (activeTab === 'groups' && currentSecretary.permissions?.groups) ||
+        (activeTab === 'payments' && currentSecretary.permissions?.payments) ||
+        (activeTab === 'attendance' && currentSecretary.permissions?.attendance) ||
+        (activeTab === 'audit' && currentSecretary.permissions?.logs);
+      
+      if (!allowed) {
+        setActiveTab('dashboard');
+      }
+    }
+  }, [currentSecretary, activeTab]);
+
   // Save changes locally and sync sementically with RTDB
   const handleStateChange = async (updatedData: AppData, logMsg?: string, category?: AuditLog['category']) => {
     setState({ ...updatedData });
-    await saveAppData(updatedData, logMsg, category);
+    const operatorName = currentSecretary ? `${currentSecretary.name} (سكرتير)` : "المدير العام";
+    await saveAppData(updatedData, logMsg, category, operatorName);
   };
 
   // Daily Closing & Automatic Backup state managers
@@ -233,7 +261,7 @@ export default function App() {
       
       // Push system audit trail log node
       const newAuditLog: AuditLog = {
-        id: `audit-${Date.now()}`,
+        id: `audit-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
         timestamp: new Date().toISOString(),
         action: "تم تصدير نسخة احتياطية يومية",
         category: 'system',
@@ -350,10 +378,14 @@ export default function App() {
 
   // Teacher Ops
   const handleSaveTeacher = (teacher: Teacher) => {
+    const exists = state.teachers.some(t => t.id === teacher.id);
+    const updatedTeachers = exists
+      ? state.teachers.map(t => t.id === teacher.id ? teacher : t)
+      : [...state.teachers, teacher];
     handleStateChange({
       ...state,
-      teachers: [...state.teachers, teacher]
-    }, `إضافة معلم جديد: ${teacher.name} لمادة ${teacher.subject}`, 'teachers');
+      teachers: updatedTeachers
+    }, exists ? `تعديل بيانات المعلم: ${teacher.name}` : `إضافة معلم جديد: ${teacher.name} لمادة ${teacher.subject}`, 'teachers');
   };
 
   const handleDeleteTeacher = (teacherId: string) => {
@@ -366,6 +398,29 @@ export default function App() {
       // Unlink from groups
       groups: state.groups.filter(g => g.teacherId !== teacherId)
     }, `حذف ملف المعلم: ${trainer.name}`, 'teachers');
+  };
+
+  // Secretary Operations
+  const handleSaveSecretary = (sec: Secretary) => {
+    const exists = (state.secretaries || []).some(s => s.id === sec.id);
+    const updatedSecs = exists
+      ? (state.secretaries || []).map(s => s.id === sec.id ? sec : s)
+      : [...(state.secretaries || []), sec];
+    
+    handleStateChange({
+      ...state,
+      secretaries: updatedSecs
+    }, exists ? `تعديل حساب سكرتارية: ${sec.name}` : `تسجيل حساب سكرتارية جديد لـ: ${sec.name}`, 'system');
+  };
+
+  const handleDeleteSecretary = (secId: string) => {
+    const target = (state.secretaries || []).find(s => s.id === secId);
+    if (!target) return;
+
+    handleStateChange({
+      ...state,
+      secretaries: (state.secretaries || []).filter(s => s.id !== secId)
+    }, `حظر وحذف حساب السكرتير ومساعد السنتر: ${target.name}`, 'system');
   };
 
   // Record Payment receipt
@@ -474,7 +529,7 @@ export default function App() {
       centerSettings: state.centerSettings, // Preserve existing center identification details!
       auditLogs: [
         {
-          id: `audit-${Date.now()}`,
+          id: `audit-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
           timestamp: new Date().toISOString(),
           action: "تصفير قاعدة البيانات بالكامل",
           category: "system",
@@ -493,12 +548,13 @@ export default function App() {
   // Navigation Links menu RTL sidebar
   const navigationItems = [
     { id: 'dashboard', label: 'لوحة التحكم', icon: LayoutDashboard },
-    { id: 'students', label: 'ملفات الطلاب', icon: Users },
-    { id: 'groups', label: 'المجموعات والمعلمين', icon: Layers },
-    { id: 'payments', label: 'الحسابات والفوترة', icon: DollarSign },
-    { id: 'attendance', label: 'الحضور والغياب (QR)', icon: UserCheck },
-    { id: 'audit', label: 'النسخ والأمن', icon: ShieldAlert },
-  ];
+    (!currentSecretary || currentSecretary.permissions?.students) && { id: 'students', label: 'ملفات الطلاب', icon: Users },
+    (!currentSecretary || currentSecretary.permissions?.groups) && { id: 'groups', label: 'المجموعات والمعلمين', icon: Layers },
+    (!currentSecretary || currentSecretary.permissions?.payments) && { id: 'payments', label: 'الحسابات والفوترة', icon: DollarSign },
+    (!currentSecretary || currentSecretary.permissions?.attendance) && { id: 'attendance', label: 'الحضور والغياب (QR)', icon: UserCheck },
+    (!currentSecretary) && { id: 'secretaries', label: 'إدارة السكرتارية', icon: UserCog },
+    (!currentSecretary || currentSecretary.permissions?.logs) && { id: 'audit', label: 'النسخ والأمن', icon: ShieldAlert },
+  ].filter(Boolean) as { id: string; label: string; icon: any }[];
 
   const handleNavigate = (tabId: string) => {
     setActiveTab(tabId);
@@ -731,6 +787,66 @@ export default function App() {
               <span className="text-[9px] bg-rose-500/10 text-rose-400 font-extrabold px-2 py-0.5 rounded-full border border-rose-550/10 shrink-0">آمن</span>
             </button>
           </div>
+
+          {/* Active Profile Status switch widget */}
+          <div className="mt-4 pt-4 border-t border-slate-800/60">
+            <div className="bg-slate-950 p-3 rounded-xl border border-slate-850 flex flex-col gap-2">
+              <span className="text-[9px] text-slate-500 font-extrabold block">المستفيد الحالي من النظام:</span>
+              <div className="flex items-center justify-between gap-1.5 overflow-hidden">
+                <div className="flex items-center gap-2 overflow-hidden">
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${
+                    currentSecretary ? 'bg-purple-600/10 text-purple-400 border border-purple-500/20' : 'bg-indigo-650/10 text-indigo-400 border border-indigo-505/20'
+                  }`}>
+                    {currentSecretary ? '👤' : '👑'}
+                  </div>
+                  <div className="truncate text-right">
+                    <p className="font-extrabold text-[10px] text-white truncate" title={currentSecretary ? currentSecretary.name : 'المدير العام (Admin)'}>
+                      {currentSecretary ? currentSecretary.name : 'المدير العام (Admin)'}
+                    </p>
+                    <p className="text-[8px] text-slate-400 mt-0.5 truncate">
+                      {currentSecretary ? `مساعد: ${currentSecretary.workspaceType === 'teacher' ? 'مدرس' : 'قاعة'}` : 'صلاحيات كاملة'}
+                    </p>
+                  </div>
+                </div>
+
+                {currentSecretary ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const adminPassword = state.centerSettings?.password;
+                      if (adminPassword) {
+                        const confirmPin = prompt("🔑 يرجى كتابة الرقم السري للمدير (الـ Admin) لتأكيد هويتك والعودة لحساب المسؤول الأول:");
+                        if (confirmPin === null) return; // user cancelled
+                        if (confirmPin !== adminPassword) {
+                          alert("❌ الرقم السري للمسؤول غير صحيحة! يرجى المحاولة مرة أخرى.");
+                          return;
+                        }
+                      }
+                      setCurrentSecretary(null);
+                      setActiveTab('dashboard');
+                    }}
+                    className="text-[9px] bg-slate-800 hover:bg-slate-705 border border-slate-700 hover:text-white text-slate-300 px-2 py-1 rounded-md font-bold transition-all shrink-0 cursor-pointer"
+                    title="الخروج لحساب المسؤول العام"
+                  >
+                    خروج كمسؤول
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLoginPinText('');
+                      setLoginPinError('');
+                      setIsPinLoginModalOpen(true);
+                    }}
+                    className="text-[9px] bg-indigo-600 hover:bg-indigo-700 border border-indigo-550 text-white px-2 py-1 rounded-md font-bold transition-all shrink-0 cursor-pointer"
+                    title="تسجيل دخول سكرتارية"
+                  >
+                    تبديل سكرتير
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
         </nav>
 
         {/* Sticky footer user profile info / Live Status */}
@@ -909,6 +1025,7 @@ export default function App() {
                 teachers={state.teachers}
                 payments={state.payments}
                 onNavigate={handleNavigate}
+                currentSecretary={currentSecretary}
               />
             )}
 
@@ -959,6 +1076,16 @@ export default function App() {
                 attendance={state.attendance}
                 onSaveAttendance={handleSaveAttendance}
                 onUpdateStudentGroups={handleUpdateStudentGroups}
+                showConfirm={showConfirm}
+              />
+            )}
+
+            {activeTab === 'secretaries' && (
+              <SecretariesList 
+                secretaries={state.secretaries || []}
+                teachers={state.teachers}
+                onSaveSecretary={handleSaveSecretary}
+                onDeleteSecretary={handleDeleteSecretary}
                 showConfirm={showConfirm}
               />
             )}
@@ -1190,6 +1317,98 @@ export default function App() {
                 حسناً، قمت بالتعديل
               </button>
             </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Secretary Passcode PIN Authentication modal */}
+      {isPinLoginModalOpen && (
+        <div className="fixed inset-0 z-55 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs font-sans text-right text-slate-100 font-sans" dir="rtl">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-2xl p-6 shadow-2xl space-y-4 relative overflow-hidden text-right"
+          >
+            <div className="flex items-center gap-3 border-b border-slate-800 pb-3 justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-purple-500/10 border border-purple-500/20 text-purple-400 rounded-lg flex items-center justify-center font-bold">
+                  🔑
+                </div>
+                <div>
+                  <h3 className="font-bold text-white text-xs">تسجيل دخول مساعد سكرتارية</h3>
+                  <p className="text-[9px] text-purple-400">يرجى كتابة كود المرور لتنشيط الحساب</p>
+                </div>
+              </div>
+              <button 
+                type="button"
+                onClick={() => {
+                  setIsPinLoginModalOpen(false);
+                  setLoginPinError('');
+                }}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              if (!loginPinText) {
+                setLoginPinError("يرجى كتابة الكود المروري الخاص بملفك أولاً.");
+                return;
+              }
+              const matched = (state.secretaries || []).find(s => s.passcode === loginPinText);
+              if (!matched) {
+                setLoginPinError("⚠️ عذراً كود PIN المروري غير صحيح أو تم إلغاؤه!");
+                return;
+              }
+              setCurrentSecretary(matched);
+              setIsPinLoginModalOpen(false);
+              setLoginPinText('');
+              setLoginPinError('');
+              setActiveTab('dashboard');
+            }} className="space-y-4">
+              <div>
+                <label className="block text-slate-400 text-xs font-bold mb-2 text-center">أدخل كود المرور PIN الفردي الخاص بك</label>
+                <input 
+                  type="password"
+                  maxLength={6}
+                  autoFocus
+                  placeholder="••••"
+                  value={loginPinText}
+                  onChange={(e) => {
+                    setLoginPinText(e.target.value.replace(/\D/g, ''));
+                    setLoginPinError('');
+                  }}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 text-center text-lg text-indigo-400 font-mono font-bold tracking-widest focus:outline-hidden focus:border-purple-500"
+                />
+              </div>
+
+              {loginPinError && (
+                <div className="p-3 bg-rose-955/20 border border-rose-900/30 text-rose-450 rounded-xl text-center text-xs font-bold leading-relaxed">
+                  {loginPinError}
+                </div>
+              )}
+
+              <div className="pt-2 border-t border-slate-800 flex justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsPinLoginModalOpen(false);
+                    setLoginPinError('');
+                  }}
+                  className="flex-1 bg-slate-950 border border-slate-850 hover:bg-slate-850 hover:text-white text-slate-400 font-bold py-2 px-4 rounded-xl text-xs transition cursor-pointer"
+                >
+                  إلغاء التراجع
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-xl text-xs transition cursor-pointer"
+                >
+                  تنشيط وربط الدخول
+                </button>
+              </div>
+            </form>
           </motion.div>
         </div>
       )}

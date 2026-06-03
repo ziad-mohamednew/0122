@@ -9,6 +9,7 @@ export interface Student {
   balance: number; // Student positive or negative balance (dues)
   createdAt: string;
   status: 'active' | 'inactive';
+  gender?: 'male' | 'female'; // Gender: 'male' or 'female'
 }
 
 export interface Teacher {
@@ -18,6 +19,7 @@ export interface Teacher {
   phone: string;
   commissionRate: number; // Percentage e.g. 80%
   createdAt: string;
+  gender?: 'male' | 'female'; // Gender: 'male' or 'female'
 }
 
 export interface Group {
@@ -73,6 +75,25 @@ export interface CenterSettings {
   password?: string; // Optional login/PIN lock password
 }
 
+export interface Secretary {
+  id: string;
+  name: string;
+  gender: 'male' | 'female';
+  phone: string;
+  workspaceType: 'teacher' | 'hall';
+  teacherId?: string; // Linked teacher id
+  hallName?: string; // Hall name or number
+  passcode: string; // 4-digit code
+  createdAt: string;
+  permissions?: {
+    students: boolean;
+    groups: boolean;
+    attendance: boolean;
+    payments: boolean;
+    logs: boolean;
+  };
+}
+
 export interface AppData {
   students: Student[];
   teachers: Teacher[];
@@ -80,5 +101,6 @@ export interface AppData {
   payments: Payment[];
   attendance: AttendanceRecord[];
   auditLogs: AuditLog[];
+  secretaries?: Secretary[];
   centerSettings?: CenterSettings;
 }

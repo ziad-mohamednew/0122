@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getDatabase, ref, set, onValue, get } from 'firebase/database';
-import { Student, Teacher, Group, Payment, AttendanceRecord, AuditLog, AppData, CenterSettings } from './types';
+import { Student, Teacher, Group, Payment, AttendanceRecord, AuditLog, AppData, CenterSettings, Secretary } from './types';
 
 // Realtime Database URL provided by the user
 const DATABASE_URL = "https://center-management-legislator-default-rtdb.europe-west1.firebasedatabase.app/";
@@ -136,6 +136,7 @@ const initialMockData: AppData = {
       timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
     }
   ],
+  secretaries: [],
   auditLogs: [
     {
       id: "audit-1",
@@ -184,6 +185,7 @@ export function sanitizeData(data: any): AppData {
     groups: sanitizeArray<Group>(data.groups),
     payments: sanitizeArray<Payment>(data.payments),
     attendance: sanitizeArray<AttendanceRecord>(data.attendance),
+    secretaries: sanitizeArray<Secretary>(data.secretaries),
     auditLogs: sanitizeArray<AuditLog>(data.auditLogs),
     centerSettings: data.centerSettings ? {
       name: String(data.centerSettings.name || ''),
@@ -288,7 +290,7 @@ export async function testFirebaseConnection(): Promise<{ success: boolean; mess
   }
 }
 
-export async function saveAppData(data: AppData, actionDescription?: string, category: AuditLog['category'] = 'system') {
+export async function saveAppData(data: AppData, actionDescription?: string, category: AuditLog['category'] = 'system', operatorUsername: string = "المسؤول العام") {
   // Sanitize before saving
   const cleanData = sanitizeData(data);
 
@@ -298,12 +300,12 @@ export async function saveAppData(data: AppData, actionDescription?: string, cat
   // Add audit log for this save if action is provided
   if (actionDescription) {
     const newLog: AuditLog = {
-      id: `audit-${Date.now()}`,
+      id: `audit-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
       timestamp: new Date().toISOString(),
       action: actionDescription,
       category,
       details: `تمت عملية تحديث: ${actionDescription}`,
-      operator: "لوحة التحكم"
+      operator: operatorUsername
     };
     cleanData.auditLogs = [newLog, ...cleanData.auditLogs].slice(0, 500); // Limit logs to 500
     localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanData));

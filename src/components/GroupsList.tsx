@@ -9,9 +9,13 @@ import {
   Phone, 
   Hash, 
   Clock, 
-  BookOpen 
+  BookOpen,
+  Search,
+  Download,
+  Printer
 } from 'lucide-react';
 import { Group, Teacher, Student } from '../types';
+import { exportToExcel, exportToPDF } from '../utils/exportHelper';
 
 interface GroupsListProps {
   groups: Group[];
@@ -52,6 +56,10 @@ export default function GroupsList({
   const [teacherPhone, setTeacherPhone] = useState('');
   const [teacherCommission, setTeacherCommission] = useState(80);
   const [teacherError, setTeacherError] = useState('');
+  const [editingTeacherId, setEditingTeacherId] = useState<string | null>(null);
+  const [teacherGender, setTeacherGender] = useState<'male' | 'female'>('male');
+  const [teacherSearchTerm, setTeacherSearchTerm] = useState('');
+  const [teacherSelectedGender, setTeacherSelectedGender] = useState<'all' | 'male' | 'female'>('all');
 
   // Form states - Group
   const [groupName, setGroupName] = useState('');
@@ -89,12 +97,13 @@ export default function GroupsList({
 
     setTeacherError('');
     const newTeacher: Teacher = {
-      id: `tch-${Date.now()}`,
+      id: editingTeacherId || `tch-${Date.now()}`,
       name: teacherName,
       subject: teacherSubject,
       phone: teacherPhone,
       commissionRate: Number(teacherCommission),
-      createdAt: new Date().toISOString()
+      gender: teacherGender,
+      createdAt: editingTeacherId ? (teachers.find(t => t.id === editingTeacherId)?.createdAt || new Date().toISOString()) : new Date().toISOString()
     };
 
     onSaveTeacher(newTeacher);
@@ -104,6 +113,8 @@ export default function GroupsList({
     setTeacherSubject('');
     setTeacherPhone('');
     setTeacherCommission(80);
+    setTeacherGender('male');
+    setEditingTeacherId(null);
   };
 
   // Submit Group
@@ -169,123 +180,284 @@ export default function GroupsList({
       </div>
 
       {activeSubTab === 'teachers' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left panel: Add Teacher Form */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs h-fit">
-            <h3 className="font-bold text-slate-800 border-b border-slate-100 pb-3 mb-4 flex items-center gap-2">
-              <UserPlus className="w-5 h-5 text-indigo-600" />
-              <span>إضافة معلم جديد</span>
-            </h3>
+        (() => {
+          // Calculate filtered teachers list
+          const filteredTeachers = teachers.filter(t => {
+            const matchesSearch = t.name.toLowerCase().includes(teacherSearchTerm.toLowerCase()) || 
+                                  t.subject.toLowerCase().includes(teacherSearchTerm.toLowerCase()) ||
+                                  t.phone.includes(teacherSearchTerm);
+            const matchesGender = teacherSelectedGender === 'all' || t.gender === teacherSelectedGender;
+            return matchesSearch && matchesGender;
+          });
 
-            <form onSubmit={handleTeacherSubmit} className="space-y-4">
-              <div>
-                <label className="block text-slate-600 text-xs font-semibold mb-1.5">الاسم ثلاثي للمعلم</label>
-                <input 
-                  type="text" 
-                  value={teacherName} 
-                  onChange={(e) => setTeacherName(e.target.value)} 
-                  placeholder="مثال: أ. محمود السعدني"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-700 text-sm focus:outline-hidden focus:border-indigo-500 transition-colors"
-                />
-              </div>
+          const handleTeacherExportExcel = () => {
+            const headers = ["الاسم بالكامل", "النوع", "المادة الدراسية", "رقم التليفون", "نسبة العمولة (%)", "المجموعات الحالية"];
+            const rows = filteredTeachers.map(t => [
+              t.name,
+              t.gender === 'female' ? 'أنثى' : 'ذكر',
+              t.subject,
+              t.phone,
+              `${t.commissionRate}%`,
+              groups.filter(g => g.teacherId === t.id).map(g => g.name).join(' | ')
+            ]);
+            exportToExcel("كشف تفصيلي بالكادر التعليمي (المعلمون)", headers, rows, "كشف_معلمي_السنتر");
+          };
 
-              <div>
-                <label className="block text-slate-600 text-xs font-semibold mb-1.5">المادة الدراسية الأساسية</label>
-                <input 
-                  type="text" 
-                  value={teacherSubject} 
-                  onChange={(e) => setTeacherSubject(e.target.value)} 
-                  placeholder="الفيزياء، الكيمياء، إلخ..."
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-700 text-sm focus:outline-hidden focus:border-indigo-500 transition-colors"
-                />
-              </div>
+          const handleTeacherExportPDF = () => {
+            const headers = ["الاسم بالكامل", "النوع", "المادة", "الهاتف", "العمولة", "المجموعات"];
+            const rows = filteredTeachers.map(t => [
+              t.name,
+              t.gender === 'female' ? 'أنثى' : 'ذكر',
+              t.subject,
+              t.phone,
+              `${t.commissionRate}%`,
+              groups.filter(g => g.teacherId === t.id).map(g => g.name).join(' ، ')
+            ]);
+            const summary = [
+              { label: "إجمالي عدد المدرسين المصفى", value: String(filteredTeachers.length) },
+              { label: "مدرسين للذكور", value: String(filteredTeachers.filter(t => t.gender !== 'female').length) },
+              { label: "مدرسات للإناث", value: String(filteredTeachers.filter(t => t.gender === 'female').length) }
+            ];
+            exportToPDF("كشف تفصيلي بالكادر التعليمي ببياناتهم ونسبهم", headers, rows, undefined, summary);
+          };
 
-              <div>
-                <label className="block text-slate-600 text-xs font-semibold mb-1.5">رقم تليفون المعلم</label>
-                <input 
-                  type="tel" 
-                  value={teacherPhone} 
-                  onChange={(e) => setTeacherPhone(e.target.value)} 
-                  placeholder="مثال: 01023456789"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-700 text-sm focus:outline-hidden focus:border-indigo-500 transition-colors"
-                />
-              </div>
+          const startEditTeacher = (t: Teacher) => {
+            setEditingTeacherId(t.id);
+            setTeacherName(t.name);
+            setTeacherPhone(t.phone);
+            setTeacherSubject(t.subject);
+            setTeacherCommission(t.commissionRate);
+            setTeacherGender(t.gender || 'male');
+          };
 
-              <div>
-                <label className="block text-slate-600 text-xs font-semibold mb-1.5">نسبة المعلم (من رسوم الحصة/الاشتراك %)</label>
-                <div className="flex items-center gap-2">
-                  <input 
-                    type="number" 
-                    min="0" 
-                    max="100"
-                    value={teacherCommission} 
-                    onChange={(e) => setTeacherCommission(Number(e.target.value))} 
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-700 text-sm focus:outline-hidden focus:border-indigo-500 transition-colors"
-                  />
-                  <span className="text-slate-500 text-sm font-bold">%</span>
-                </div>
-                <p className="text-[10px] text-slate-400 mt-1">يأخذ السنتر النسبة المتبقية تلقائياً عند الإيداع.</p>
-              </div>
+          return (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Left panel: Add Teacher Form */}
+              <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs h-fit">
+                <h3 className="font-bold text-slate-800 border-b border-slate-100 pb-3 mb-4 flex items-center gap-2">
+                  <UserPlus className="w-5 h-5 text-indigo-600" />
+                  <span>{editingTeacherId ? 'تعديل بيانات المعلم' : 'إضافة معلم جديد'}</span>
+                </h3>
 
-              {teacherError && (
-                <div className="p-3 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl text-xs font-semibold leading-relaxed">
-                  {teacherError}
-                </div>
-              )}
+                <form onSubmit={handleTeacherSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-slate-600 text-xs font-semibold mb-1.5">الاسم ثلاثي للمعلم</label>
+                    <input 
+                      type="text" 
+                      value={teacherName} 
+                      onChange={(e) => setTeacherName(e.target.value)} 
+                      placeholder="مثال: أ. محمود السعدني"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-700 text-sm focus:outline-hidden focus:border-indigo-500 transition-colors"
+                    />
+                  </div>
 
-              <button 
-                type="submit"
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl transition-all shadow-sm shadow-indigo-100 flex items-center justify-center gap-2 mt-2"
-              >
-                <Plus className="w-4 h-4" />
-                <span>حفظ بيانات المعلم</span>
-              </button>
-            </form>
-          </div>
+                  <div>
+                    <label className="block text-slate-600 text-xs font-semibold mb-1.5">المادة الدراسية الأساسية</label>
+                    <input 
+                      type="text" 
+                      value={teacherSubject} 
+                      onChange={(e) => setTeacherSubject(e.target.value)} 
+                      placeholder="الفيزياء، الكيمياء، إلخ..."
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-700 text-sm focus:outline-hidden focus:border-indigo-500 transition-colors"
+                    />
+                  </div>
 
-          {/* Right panel: Teachers Card list */}
-          <div className="lg:col-span-2 space-y-4">
-            {teachers.length === 0 ? (
-              <div className="bg-white p-12 text-center text-slate-400 rounded-2xl border border-slate-100 shadow-xs">
-                لا يوجد أي معلم مسجل بالسنتر حالياً. استخدم النموذج المالي لإضافتهم وتوزيع الحصص.
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {teachers.map((t) => {
-                  const teacherGroups = groups.filter(g => g.teacherId === t.id);
-                  return (
-                    <motion.div 
-                      layout
-                      key={t.id} 
-                      className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs hover:border-slate-200 transition-all flex flex-col justify-between"
+                  <div>
+                    <label className="block text-slate-600 text-xs font-semibold mb-1.5">النوع (الجنس)</label>
+                    <div className="flex gap-4 bg-slate-50 p-3 rounded-xl border border-slate-150">
+                      <label className="flex items-center gap-1.5 cursor-pointer text-sm text-slate-700 font-bold">
+                        <input 
+                          type="radio" 
+                          name="teacherGenderForm" 
+                          value="male"
+                          checked={teacherGender === 'male'}
+                          onChange={() => setTeacherGender('male')}
+                          className="w-4 h-4 text-indigo-600 border-slate-300 focus:ring-indigo-500"
+                        />
+                        <span>ذكر ♂</span>
+                      </label>
+                      <label className="flex items-center gap-1.5 cursor-pointer text-sm text-slate-700 font-bold">
+                        <input 
+                          type="radio" 
+                          name="teacherGenderForm" 
+                          value="female"
+                          checked={teacherGender === 'female'}
+                          onChange={() => setTeacherGender('female')}
+                          className="w-4 h-4 text-indigo-600 border-slate-300 focus:ring-indigo-500"
+                        />
+                        <span>أنثى ♀</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-600 text-xs font-semibold mb-1.5">رقم تليفون المعلم</label>
+                    <input 
+                      type="tel" 
+                      value={teacherPhone} 
+                      onChange={(e) => setTeacherPhone(e.target.value)} 
+                      placeholder="مثال: 01023456789"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-700 text-sm focus:outline-hidden focus:border-indigo-500 transition-colors"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-600 text-xs font-semibold mb-1.5">نسبة المعلم (من رسوم الحصة/الاشتراك %)</label>
+                    <div className="flex items-center gap-2">
+                      <input 
+                        type="number" 
+                        min="0" 
+                        max="100"
+                        value={teacherCommission} 
+                        onChange={(e) => setTeacherCommission(Number(e.target.value))} 
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-700 text-sm focus:outline-hidden focus:border-indigo-500 transition-colors"
+                      />
+                      <span className="text-slate-500 text-sm font-bold">%</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-1">يأخذ السنتر النسبة المتبقية تلقائياً عند الإيداع.</p>
+                  </div>
+
+                  {teacherError && (
+                    <div className="p-3 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl text-xs font-semibold leading-relaxed">
+                      {teacherError}
+                    </div>
+                  )}
+
+                  <button 
+                    type="submit"
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl transition-all shadow-sm shadow-indigo-100 flex items-center justify-center gap-2 mt-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>{editingTeacherId ? 'تعديل وحفظ التغييرات' : 'حفظ بيانات المعلم'}</span>
+                  </button>
+
+                  {editingTeacherId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingTeacherId(null);
+                        setTeacherName('');
+                        setTeacherSubject('');
+                        setTeacherPhone('');
+                        setTeacherCommission(80);
+                        setTeacherGender('male');
+                      }}
+                      className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2 rounded-xl text-xs transition-colors mt-1"
                     >
-                      <div>
-                        <div className="flex justify-between items-start">
-                          <div className="bg-indigo-50 text-indigo-700 w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg">
-                            🎓
-                          </div>
-                          <button 
-                            type="button"
-                            onClick={() => {
-                              if (showConfirm) {
-                                showConfirm({
-                                  title: "حذف ملف المعلم ببياناته",
-                                  message: `⚠️ هل تريد بالتأكيد حذف المعلم (${t.name})؟ سيؤدي هذا الإجراء لفك ارتباط وحذف كافة المجموعات التعليمية المرتبطة به.`,
-                                  confirmText: "نعم، احذف المعلم",
-                                  cancelText: "تراجع",
-                                  type: "danger",
-                                  onConfirm: () => onDeleteTeacher(t.id)
-                                });
-                              } else if (confirm(`هل تريد بالتأكيد حذف المعلم ${t.name}؟ سيؤدي ذلك لفك ارتباط المجموعات.`)) {
-                                onDeleteTeacher(t.id);
-                              }
-                            }}
-                            className="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg hover:bg-slate-50 transition-all"
-                            title="حذف المعلم"
-                          >
-                            <Trash2 className="w-4.5 h-4.5" />
-                          </button>
-                        </div>
+                      إلغاء التعديل والعودة للإضافة
+                    </button>
+                  )}
+                </form>
+              </div>
+
+              {/* Right panel: Teachers Card list */}
+              <div className="lg:col-span-2 space-y-4">
+                
+                {/* Search & Filters & Exports for Teachers */}
+                <div className="flex flex-col sm:flex-row gap-3 items-center bg-white p-4 rounded-xl border border-slate-100 shadow-2xs">
+                  <div className="relative w-full sm:flex-1">
+                    <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input 
+                      type="text" 
+                      placeholder="ابحث باسم المعلم، التليفون أو المادة الأساسية..."
+                      value={teacherSearchTerm}
+                      onChange={(e) => setTeacherSearchTerm(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pr-9 pl-4 py-2 text-xs text-slate-700 focus:outline-hidden"
+                    />
+                  </div>
+
+                  <select 
+                    value={teacherSelectedGender}
+                    onChange={(e) => setTeacherSelectedGender(e.target.value as any)}
+                    className="w-full sm:w-32 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-600 text-xs focus:outline-hidden font-bold"
+                  >
+                    <option value="all">النوع (الكل)</option>
+                    <option value="male">ذكور ♂</option>
+                    <option value="female">إناث ♀</option>
+                  </select>
+
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <button 
+                      type="button"
+                      onClick={handleTeacherExportExcel}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold p-2 px-3 rounded-xl text-xs flex items-center gap-1 transition-all flex-1 justify-center cursor-pointer"
+                      title="تصدير Excel"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Excel</span>
+                    </button>
+
+                    <button 
+                      type="button"
+                      onClick={handleTeacherExportPDF}
+                      className="bg-rose-600 hover:bg-rose-700 text-white font-bold p-2 px-3 rounded-xl text-xs flex items-center gap-1 transition-all flex-1 justify-center cursor-pointer"
+                      title="تصدير PDF للطباعة"
+                    >
+                      <Printer className="w-3.5 h-3.5" />
+                      <span>PDF</span>
+                    </button>
+                  </div>
+                </div>
+
+                {filteredTeachers.length === 0 ? (
+                  <div className="bg-white p-12 text-center text-slate-400 rounded-2xl border border-slate-100 shadow-xs">
+                    لم نجد معلمين يطابقون خيارات التصفية المدخلة.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {filteredTeachers.map((t) => {
+                      const teacherGroups = groups.filter(g => g.teacherId === t.id);
+                      return (
+                        <motion.div 
+                          layout
+                          key={t.id} 
+                          className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs hover:border-slate-200 transition-all flex flex-col justify-between"
+                        >
+                          <div>
+                            <div className="flex justify-between items-start">
+                              <div className="flex gap-1.5 items-center">
+                                <div className="bg-indigo-50 text-indigo-700 w-8 h-8 rounded-xl flex items-center justify-center font-bold text-lg">
+                                  🎓
+                                </div>
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                                  t.gender === 'female' ? 'bg-purple-50 text-purple-700 border border-purple-100/50' : 'bg-sky-50 text-sky-700 border border-sky-100/50'
+                                }`}>
+                                  {t.gender === 'female' ? 'أنثى ♀' : 'ذكر ♂'}
+                                </span>
+                              </div>
+                              
+                              <div className="flex gap-1">
+                                <button 
+                                  type="button" 
+                                  onClick={() => startEditTeacher(t)}
+                                  className="text-indigo-600 hover:bg-indigo-50 p-1.5 rounded-lg transition-all text-xs"
+                                  title="تعديل ملف المعلم"
+                                >
+                                  📝 تعديل
+                                </button>
+                                <button 
+                                  type="button"
+                                  onClick={() => {
+                                    if (showConfirm) {
+                                      showConfirm({
+                                        title: "حذف ملف المعلم ببياناته",
+                                        message: `⚠️ هل تريد بالتأكيد حذف المعلم (${t.name})؟ سيؤدي هذا الإجراء لفك ارتباط وحذف كافة المجموعات التعليمية المرتبطة به.`,
+                                        confirmText: "نعم، احذف المعلم",
+                                        cancelText: "تراجع",
+                                        type: "danger",
+                                        onConfirm: () => onDeleteTeacher(t.id)
+                                      });
+                                    } else if (confirm(`هل تريد بالتأكيد حذف المعلم ${t.name}؟ سيؤدي ذلك لفك ارتباط المجموعات.`)) {
+                                      onDeleteTeacher(t.id);
+                                    }
+                                  }}
+                                  className="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg hover:bg-slate-50 transition-all"
+                                  title="حذف المعلم"
+                                >
+                                  <Trash2 className="w-4.5 h-4.5" />
+                                </button>
+                              </div>
+                            </div>
 
                         <div className="mt-4">
                           <h4 className="font-bold text-slate-800 text-base">{t.name}</h4>
@@ -317,6 +489,8 @@ export default function GroupsList({
             )}
           </div>
         </div>
+          );
+        })()
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left panel: Add Group Form */}

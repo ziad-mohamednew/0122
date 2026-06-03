@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import { Student, Group, Teacher, CenterSettings } from '../types';
+import { exportToExcel, exportToPDF } from '../utils/exportHelper';
 
 interface StudentsListProps {
   students: Student[];
@@ -53,12 +54,14 @@ export default function StudentsList({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGroupId, setSelectedGroupId] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'active' | 'inactive'>('all');
+  const [selectedGender, setSelectedGender] = useState<'all' | 'male' | 'female'>('all');
 
   // New Student Form States
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [studentName, setStudentName] = useState('');
   const [studentPhone, setStudentPhone] = useState('');
   const [parentPhone, setParentPhone] = useState('');
+  const [studentGender, setStudentGender] = useState<'male' | 'female'>('male');
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [studentBalance, setStudentBalance] = useState(0);
   const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
@@ -116,6 +119,7 @@ export default function StudentsList({
       balance: editingStudentId ? (students.find(s => s.id === editingStudentId)?.balance || 0) : Number(studentBalance),
       status: 'active',
       createdAt: editingStudentId ? (students.find(s => s.id === editingStudentId)?.createdAt || new Date().toISOString()) : new Date().toISOString(),
+      gender: studentGender,
     };
 
     onSaveStudent(newStudent);
@@ -126,6 +130,7 @@ export default function StudentsList({
     setStudentName('');
     setStudentPhone('');
     setParentPhone('');
+    setStudentGender('male');
     setSelectedGroups([]);
     setStudentBalance(0);
     setFormError('');
@@ -136,6 +141,7 @@ export default function StudentsList({
     setStudentName(student.name);
     setStudentPhone(student.phone);
     setParentPhone(student.parentPhone);
+    setStudentGender(student.gender || 'male');
     setSelectedGroups(student.groupIds || []);
     setFormError('');
     setIsFormOpen(true);
@@ -161,35 +167,56 @@ export default function StudentsList({
       
       const matchesStatus = selectedStatus === 'all' || student.status === selectedStatus;
 
-      return matchesSearch && matchesGroup && matchesStatus;
-    });
-  }, [students, searchTerm, selectedGroupId, selectedStatus]);
+      const matchesGender = selectedGender === 'all' || student.gender === selectedGender;
 
-  // Export to Excel / CSV with BOM to support Arabic text correctly
-  const handleExportCSV = () => {
-    const headers = ["الكود", "اسم الطالب", "تليفون الطالب", "تليفون ولي الأمر", "المجموعات المسجلة", "الرصيد المالي", "حالة الملف"];
+      return matchesSearch && matchesGroup && matchesStatus && matchesGender;
+    });
+  }, [students, searchTerm, selectedGroupId, selectedStatus, selectedGender]);
+
+  // Export to Excel 
+  const handleExportExcel = () => {
+    const headers = ["الكود/الرمز", "اسم الطالب بالكامل", "النوع (الجنس)", "تليفون الطالب", "تليفون ولي الأمر", "المجموعات المسجلة", "الرصيد المالي", "الحالة"];
     const rows = filteredStudents.map(s => {
       const linkedGroupNames = s.groupIds ? s.groupIds.map(gId => groups.find(g => g.id === gId)?.name || '').filter(Boolean).join(' | ') : '';
       return [
         s.code,
         s.name,
+        s.gender === 'female' ? 'أنثى' : 'ذكر',
         s.phone,
         s.parentPhone,
         linkedGroupNames,
-        s.balance,
+        `${s.balance} جنيه`,
         s.status === 'active' ? 'نشط' : 'موقف'
       ];
     });
+    exportToExcel("تقرير بيانات طلاب السنتر التعليمي تفصيلي", headers, rows, "كشف_طلاب_السنتر");
+  };
 
-    const csvContent = "\uFEFF" + [headers.join(','), ...rows.map(e => e.map(val => `"${val}"`).join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `تقرير_طلاب_السنتر_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  // Export to PDF
+  const handleExportPDF = () => {
+    const headers = ["الكود", "اسم الطالب بالكامل", "النوع", "تليفون الطالب", "تليفون ولي الأمر", "المجموعات المسجلة", "الرصيد المالي", "الحالة"];
+    const rows = filteredStudents.map(s => {
+      const linkedGroupNames = s.groupIds ? s.groupIds.map(gId => groups.find(g => g.id === gId)?.name || '').filter(Boolean).join(' ، ') : '';
+      return [
+        s.code,
+        s.name,
+        s.gender === 'female' ? 'أنثى' : 'ذكر',
+        s.phone,
+        s.parentPhone,
+        linkedGroupNames,
+        `${s.balance} ج.م`,
+        s.status === 'active' ? 'نشط' : 'موقف'
+      ];
+    });
+    
+    const summary = [
+      { label: "إجمالي عدد الطلاب المصفى", value: String(filteredStudents.length) },
+      { label: "إجمالي الطلاب الذكور", value: String(filteredStudents.filter(s => s.gender !== 'female').length) },
+      { label: "إجمالي الطالبات الإناث", value: String(filteredStudents.filter(s => s.gender === 'female').length) },
+      { label: "إجمالي المطالبات المستحقة للمدرج الحالي", value: `${filteredStudents.reduce((acc, curr) => curr.balance < 0 ? acc + curr.balance : acc, 0)} ج.م` }
+    ];
+
+    exportToPDF("كشف تفصيلي ببيانات طلاب السنتر ومستحقاتهم", headers, rows, centerSettings, summary);
   };
 
   // HTML print trigger for student visual card
@@ -264,11 +291,20 @@ export default function StudentsList({
         <div className="flex flex-wrap gap-2">
           <button 
             type="button"
-            onClick={handleExportCSV}
+            onClick={handleExportExcel}
             className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition-all flex items-center gap-1.5 shadow-sm"
           >
             <Download className="w-4 h-4" />
-            <span>تصدير الطلاب (Excel)</span>
+            <span>تصدير Excel</span>
+          </button>
+
+          <button 
+            type="button"
+            onClick={handleExportPDF}
+            className="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition-all flex items-center gap-1.5 shadow-sm"
+          >
+            <Printer className="w-4 h-4" />
+            <span>تصدير PDF</span>
           </button>
 
           <button 
@@ -278,6 +314,7 @@ export default function StudentsList({
               setStudentName('');
               setStudentPhone('');
               setParentPhone('');
+              setStudentGender('male');
               setSelectedGroups([]);
               setStudentBalance(0);
               setFormError('');
@@ -316,6 +353,17 @@ export default function StudentsList({
           {groups.map(g => (
             <option key={g.id} value={g.id}>{g.name}</option>
           ))}
+        </select>
+
+        {/* Gender Filter */}
+        <select 
+          value={selectedGender}
+          onChange={(e) => setSelectedGender(e.target.value as any)}
+          className="w-full md:w-36 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-slate-600 text-sm focus:outline-hidden"
+        >
+          <option value="all">النوع (الكل)</option>
+          <option value="male">ذكور ♂</option>
+          <option value="female">إناث ♀</option>
         </select>
 
         {/* Status Filter */}
@@ -357,6 +405,11 @@ export default function StudentsList({
                         s.status === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
                       }`}>
                         {s.status === 'active' ? 'نشط' : 'موقف'}
+                      </span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                        s.gender === 'female' ? 'bg-purple-50 text-purple-700 border border-purple-100' : 'bg-sky-50 text-sky-700 border border-sky-100'
+                      }`}>
+                        {s.gender === 'female' ? 'أنثى ♀' : 'ذكر ♂'}
                       </span>
                     </div>
 
@@ -511,6 +564,34 @@ export default function StudentsList({
                       placeholder="01112223344"
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"
                     />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-600 text-xs font-semibold mb-1.5">النوع (الجنس)</label>
+                  <div className="flex gap-4 bg-slate-50 p-3 rounded-xl border border-slate-150">
+                    <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-700 font-bold">
+                      <input 
+                        type="radio" 
+                        name="studentGender" 
+                        value="male"
+                        checked={studentGender === 'male'}
+                        onChange={() => setStudentGender('male')}
+                        className="w-4 h-4 text-indigo-600 border-slate-300 focus:ring-indigo-500"
+                      />
+                      <span>ذكر ♂</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-700 font-bold">
+                      <input 
+                        type="radio" 
+                        name="studentGender" 
+                        value="female"
+                        checked={studentGender === 'female'}
+                        onChange={() => setStudentGender('female')}
+                        className="w-4 h-4 text-indigo-600 border-slate-300 focus:ring-indigo-500"
+                      />
+                      <span>أنثى ♀</span>
+                    </label>
                   </div>
                 </div>
 
