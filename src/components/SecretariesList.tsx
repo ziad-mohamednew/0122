@@ -33,14 +33,22 @@ interface SecretariesListProps {
     type?: 'danger' | 'warning' | 'info';
     onConfirm: () => void;
   }) => void;
+  adminPassword?: string;
+  onLogAction?: (msg: string, category: 'students' | 'groups' | 'payments' | 'attendance' | 'teachers' | 'system') => void;
 }
+
+const generateRandomPasscode = () => {
+  return String(Math.floor(100000 + Math.random() * 900000));
+};
 
 export default function SecretariesList({
   secretaries = [],
   teachers = [],
   onSaveSecretary,
   onDeleteSecretary,
-  showConfirm
+  showConfirm,
+  adminPassword = '',
+  onLogAction
 }: SecretariesListProps) {
   // Form State
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -50,9 +58,18 @@ export default function SecretariesList({
   const [workspaceType, setWorkspaceType] = useState<'teacher' | 'hall'>('hall');
   const [linkedTeacherId, setLinkedTeacherId] = useState('');
   const [hallName, setHallName] = useState('');
-  const [passcode, setPasscode] = useState('');
+  const [passcode, setPasscode] = useState(() => generateRandomPasscode());
   const [showPasscode, setShowPasscode] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  // Security reveal states
+  const [revealedIds, setRevealedIds] = useState<string[]>([]);
+  const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
+  const [verifyTarget, setVerifyTarget] = useState<Secretary | null>(null);
+  const [verifyPasswordInput, setVerifyPasswordInput] = useState('');
+  const [verifyError, setVerifyError] = useState('');
+  const [verifyActionType, setVerifyActionType] = useState<'reveal' | 'unlock_edit'>('reveal');
+  const [isPasscodeFieldLocked, setIsPasscodeFieldLocked] = useState(true);
 
   // Permission Checks (Defaulting all true for ease)
   const [permStudents, setPermStudents] = useState(true);
@@ -64,6 +81,45 @@ export default function SecretariesList({
   // Search/Filters State
   const [searchTerm, setSearchTerm] = useState('');
   const [filterGender, setFilterGender] = useState<'all' | 'male' | 'female'>('all');
+
+  // Request handlers for password security authorization
+  const handleRequestRevealPasscode = (s: Secretary) => {
+    setVerifyTarget(s);
+    setVerifyActionType('reveal');
+    setVerifyPasswordInput('');
+    setVerifyError('');
+    setIsVerifyModalOpen(true);
+  };
+
+  const handleRequestUnlockPasscode = () => {
+    setVerifyTarget(null);
+    setVerifyActionType('unlock_edit');
+    setVerifyPasswordInput('');
+    setVerifyError('');
+    setIsVerifyModalOpen(true);
+  };
+
+  const handleVerifySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const isCorrect = adminPassword ? (verifyPasswordInput.trim() === adminPassword.trim()) : true;
+    if (!isCorrect) {
+      setVerifyError('❌ الرقم السري للمدير غير صحيح! يرجى المحاولة مرة أخرى.');
+      return;
+    }
+
+    if (verifyActionType === 'reveal' && verifyTarget) {
+      setRevealedIds(prev => [...prev, verifyTarget.id]);
+      onLogAction?.(`المدير قام بعرض الكود العلمي والمروري للسكرتير: ${verifyTarget.name}`, 'system');
+    } else if (verifyActionType === 'unlock_edit') {
+      setIsPasscodeFieldLocked(false);
+      onLogAction?.(`المدير قام بفتح قفل تعديل كود المرور لحساب السكرتارية: ${name}`, 'system');
+    }
+
+    setIsVerifyModalOpen(false);
+    setVerifyTarget(null);
+    setVerifyPasswordInput('');
+    setVerifyError('');
+  };
 
   // Handlers
   const handleFormSubmit = (e: React.FormEvent) => {
@@ -111,6 +167,14 @@ export default function SecretariesList({
 
     onSaveSecretary(secretaryObj);
 
+    // Logging manual passcode changes for security
+    if (editingId) {
+      const original = secretaries.find(s => s.id === editingId);
+      if (original && original.passcode !== passcode.trim()) {
+        onLogAction?.(`تم تعديل كود السكرتير المساعد (${name}) من قبل المدير`, 'system');
+      }
+    }
+
     // Reset Form
     setEditingId(null);
     setName('');
@@ -119,7 +183,8 @@ export default function SecretariesList({
     setWorkspaceType('hall');
     setLinkedTeacherId('');
     setHallName('');
-    setPasscode('');
+    setPasscode(generateRandomPasscode()); // Reset with a new secure dynamic passcode
+    setIsPasscodeFieldLocked(true); // Reset locked state for next one
     setPermStudents(true);
     setPermGroups(true);
     setPermAttendance(true);
@@ -136,6 +201,7 @@ export default function SecretariesList({
     setLinkedTeacherId(s.teacherId || '');
     setHallName(s.hallName || '');
     setPasscode(s.passcode);
+    setIsPasscodeFieldLocked(true); // Lock editing passcode by default
     setPermStudents(s.permissions?.students ?? true);
     setPermGroups(s.permissions?.groups ?? true);
     setPermAttendance(s.permissions?.attendance ?? true);
@@ -151,7 +217,8 @@ export default function SecretariesList({
     setWorkspaceType('hall');
     setLinkedTeacherId('');
     setHallName('');
-    setPasscode('');
+    setPasscode(generateRandomPasscode()); // Reset with a new randomized passcode
+    setIsPasscodeFieldLocked(true);
     setPermStudents(true);
     setPermGroups(true);
     setPermAttendance(true);
@@ -184,7 +251,7 @@ export default function SecretariesList({
         s.gender === 'female' ? 'أنثى' : 'ذكر',
         s.phone,
         workspace,
-        `PIN: ${s.passcode}`,
+        `PIN: ••••••`,
         `الطلاب (${s.permissions?.students ? 'نعم':'لا'}) | المجموعات (${s.permissions?.groups ? 'نعم':'لا'}) | الحضور (${s.permissions?.attendance ? 'نعم':'لا'}) | الحسابات (${s.permissions?.payments ? 'نعم':'لا'}) | سجل النظام (${s.permissions?.logs ? 'نعم':'لا'})`
       ];
     });
@@ -215,7 +282,7 @@ export default function SecretariesList({
         s.gender === 'female' ? 'أنثى' : 'ذكر',
         s.phone,
         workspace,
-        s.passcode,
+        "••••••",
         activePerms.join(' ، ') || 'بدون صلاحيات'
       ];
     });
@@ -343,25 +410,96 @@ export default function SecretariesList({
             )}
 
             <div>
-              <label className="block text-slate-600 text-xs font-bold mb-1.5">كود المرور التناظري الفردي (4 أرقام أو أكثر)</label>
-              <div className="relative">
-                <input 
-                  type={showPasscode ? 'text' : 'password'}
-                  maxLength={6}
-                  value={passcode}
-                  onChange={e => setPasscode(e.target.value.replace(/\D/g, ''))}
-                  placeholder="0000"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pr-3 pl-10 py-2 text-center text-xs font-mono font-bold tracking-widest focus:outline-hidden focus:border-indigo-500"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPasscode(!showPasscode)}
-                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                >
-                  {showPasscode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              <p className="text-[10px] text-slate-400 mt-1">كود PIN هذا سيستخدمه السكرتير لتسجيل دخوله وتطبيق صلاحياته الشخصية.</p>
+              <label className="block text-slate-600 dark:text-slate-300 text-xs font-bold mb-1.5 flex justify-between items-center">
+                <span>كود المرور التناظري الفردي (أوتوماتيكي عشوائي)</span>
+                {!editingId && (
+                  <button
+                    type="button"
+                    onClick={() => setPasscode(generateRandomPasscode())}
+                    className="text-[10px] text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 font-bold underline cursor-pointer"
+                  >
+                    توليد كود جديد 🎲
+                  </button>
+                )}
+              </label>
+
+              {editingId ? (
+                <div className="space-y-2">
+                  <div className="relative">
+                    <input 
+                      type={!isPasscodeFieldLocked && showPasscode ? 'text' : 'password'}
+                      maxLength={6}
+                      value={isPasscodeFieldLocked ? '••••••' : passcode}
+                      onChange={e => {
+                        if (!isPasscodeFieldLocked) {
+                          setPasscode(e.target.value.replace(/\D/g, ''));
+                        }
+                      }}
+                      readOnly={isPasscodeFieldLocked}
+                      placeholder="0000"
+                      className={`w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-center text-xs font-mono font-bold tracking-widest focus:outline-hidden ${
+                        isPasscodeFieldLocked ? 'text-slate-400 cursor-not-allowed opacity-70' : 'text-indigo-505 focus:border-indigo-505 text-indigo-600 dark:text-indigo-400'
+                      }`}
+                    />
+                    {!isPasscodeFieldLocked && (
+                      <button
+                        type="button"
+                        onClick={() => setShowPasscode(!showPasscode)}
+                        className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      >
+                        {showPasscode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    )}
+                  </div>
+
+                  {isPasscodeFieldLocked ? (
+                    <button
+                      type="button"
+                      onClick={handleRequestUnlockPasscode}
+                      className="w-full bg-amber-500/10 hover:bg-amber-500/25 border border-amber-300/30 text-amber-700 dark:text-amber-400 py-1.5 rounded-lg text-[11px] font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <Key className="w-3.5 h-3.5" />
+                      <span>🔑 فتح وتغيير كود المرور (يتطلب رمز المدير)</span>
+                    </button>
+                  ) : (
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setPasscode(generateRandomPasscode())}
+                        className="flex-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 py-1 px-2 rounded-lg text-[10px] font-bold transition cursor-pointer"
+                      >
+                        توليد عشوائي جديد 🎲
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsPasscodeFieldLocked(true)}
+                        className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-605 dark:text-slate-350 py-1 px-2.5 rounded-lg text-[10px] font-bold transition cursor-pointer"
+                      >
+                        قفل التعديل 🔒
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="relative">
+                  <input 
+                    type={showPasscode ? 'text' : 'password'}
+                    maxLength={6}
+                    value={passcode}
+                    onChange={e => setPasscode(e.target.value.replace(/\D/g, ''))}
+                    placeholder="0000"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl pr-3 pl-10 py-2 text-center text-xs font-mono font-bold tracking-widest focus:outline-hidden focus:border-indigo-500 text-indigo-600 dark:text-indigo-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPasscode(!showPasscode)}
+                    className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    {showPasscode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              )}
+              <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">يتم توليد رموز المرور تلقائياً لحماية الحسابات والموظفين بشكل صارم.</p>
             </div>
 
             {/* Permissions Toggles Area */}
@@ -522,9 +660,34 @@ export default function SecretariesList({
                     <div>
                       <div className="flex justify-between items-start">
                         <div className="flex items-center gap-2">
-                          <span className="bg-slate-100 text-slate-600 font-extrabold text-[10px] uppercase font-mono px-2 py-0.5 rounded-sm">
-                            PIN: {s.passcode}
-                          </span>
+                          <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-900 border border-slate-150 rounded-lg px-2 py-0.5 select-none md:gap-1.5">
+                            <span className="text-slate-605 dark:text-slate-350 font-medium text-[10px]">
+                              PIN: {revealedIds.includes(s.id) ? (
+                                <strong className="text-indigo-600 dark:text-indigo-400 font-extrabold font-mono text-[11px] select-text">{s.passcode}</strong>
+                              ) : (
+                                "••••••"
+                              )}
+                            </span>
+                            {revealedIds.includes(s.id) ? (
+                              <button
+                                type="button"
+                                onClick={() => setRevealedIds(prev => prev.filter(id => id !== s.id))}
+                                className="text-slate-405 hover:text-slate-650 cursor-pointer p-0.5"
+                                title="إخفاء"
+                              >
+                                <EyeOff className="w-3.5 h-3.5" />
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleRequestRevealPasscode(s)}
+                                className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-305 cursor-pointer p-0.5"
+                                title="عرض كود الدخول"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
                           <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
                             s.gender === 'female' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700'
                           }`}>
@@ -633,6 +796,85 @@ export default function SecretariesList({
           )}
         </div>
       </div>
+
+      {/* Security Verification Modal (Director Lock check) */}
+      {isVerifyModalOpen && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs text-right" dir="rtl">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white dark:bg-slate-900 w-full max-w-md p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xl"
+          >
+            <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
+              <div className="bg-amber-100 dark:bg-amber-950 p-2 rounded-xl text-amber-750 dark:text-amber-400">
+                <ShieldAlert className="w-6 h-6" />
+              </div>
+              <div className="text-right">
+                <h3 className="font-extrabold text-slate-800 dark:text-slate-100 text-base">🛡️ إجراء أمني مطلوب للتحقق</h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">صلاحيات المدير العام لإدارة حسابات السكرتارية والمساعدين</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleVerifySubmit} className="space-y-4">
+              <div className="text-right">
+                <label className="block text-slate-650 dark:text-slate-350 text-xs font-bold mb-2">
+                  {verifyActionType === 'reveal' ? (
+                    <span>يرجى كتابة الرقم السري لمدير السنتر لتأكيد هويتك وعرض كود المرور للاستخدام:</span>
+                  ) : (
+                    <span>يرجى كتابة الرقم السري لمدير السنتر للسماح بتعديل كود المرور الفردي يدوياً:</span>
+                  )}
+                </label>
+                <input 
+                  type="password"
+                  autoFocus
+                  required
+                  placeholder="أدخل الرقم السري للمسؤول..."
+                  value={verifyPasswordInput}
+                  onChange={e => {
+                    setVerifyPasswordInput(e.target.value);
+                    setVerifyError('');
+                  }}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-4 text-center text-sm tracking-widest font-mono font-bold focus:outline-hidden focus:border-amber-500"
+                />
+                
+                {!adminPassword && (
+                  <p className="text-[10px] text-amber-600 bg-amber-50 dark:bg-amber-950/20 p-2 rounded-lg mt-2 leading-relaxed font-semibold">
+                    ⚠️ لم يتم ضبط كلمة مرور لمدير السنتر حالياً في النظام. يمكنك الضغط مباشرة على "تأكيد والتحقق" لتمرير الطلب، ولكن ننصح بوضع كلمة مرور للمدير من قائمة "النسخ والأمن" لحظر الوصول للبيانات.
+                  </p>
+                )}
+              </div>
+
+              {verifyError && (
+                <div className="p-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-100 dark:border-rose-900 text-rose-600 dark:text-rose-400 rounded-xl text-center text-xs font-bold">
+                  {verifyError}
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-3 border-t border-slate-150 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsVerifyModalOpen(false);
+                    setVerifyTarget(null);
+                    setVerifyPasswordInput('');
+                    setVerifyError('');
+                  }}
+                  className="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-755 text-slate-650 dark:text-slate-300 py-2 rounded-xl text-xs font-bold cursor-pointer transition-colors"
+                >
+                  إلغاء التراجع
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-amber-600 hover:bg-amber-700 text-white py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>تأكيد والتحقق</span>
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

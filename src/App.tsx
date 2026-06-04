@@ -48,7 +48,6 @@ import OnboardingScreen from './components/OnboardingScreen';
 import ConfirmationModal from './components/ConfirmationModal';
 import SecretariesList from './components/SecretariesList';
 import FinancialReports from './components/FinancialReports';
-import WhatsAppLogs from './components/WhatsAppLogs';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -198,7 +197,6 @@ export default function App() {
         (activeTab === 'groups' && currentSecretary.permissions?.groups) ||
         (activeTab === 'payments' && currentSecretary.permissions?.payments) ||
         (activeTab === 'attendance' && currentSecretary.permissions?.attendance) ||
-        (activeTab === 'whatsapp_logs' && currentSecretary.permissions?.attendance) ||
         (activeTab === 'audit' && currentSecretary.permissions?.logs);
       
       if (!allowed) {
@@ -776,7 +774,6 @@ export default function App() {
     (!currentSecretary || currentSecretary.permissions?.payments) && { id: 'payments', label: 'الحسابات والفوترة', icon: DollarSign },
     (!currentSecretary || currentSecretary.permissions?.payments) && { id: 'financials', label: 'كشف الحسابات', icon: Calculator },
     (!currentSecretary || currentSecretary.permissions?.attendance) && { id: 'attendance', label: 'الحضور والغياب (QR)', icon: UserCheck },
-    (!currentSecretary || currentSecretary.permissions?.attendance) && { id: 'whatsapp_logs', label: 'سجل رسائل واتساب', icon: MessageSquare },
     (!currentSecretary) && { id: 'secretaries', label: 'إدارة السكرتارية', icon: UserCog },
     (!currentSecretary || currentSecretary.permissions?.logs) && { id: 'audit', label: 'النسخ والأمن', icon: ShieldAlert },
   ].filter(Boolean) as { id: string; label: string; icon: any }[];
@@ -1350,13 +1347,8 @@ export default function App() {
                 onSaveSecretary={handleSaveSecretary}
                 onDeleteSecretary={handleDeleteSecretary}
                 showConfirm={showConfirm}
-              />
-            )}
-
-            {activeTab === 'whatsapp_logs' && (
-              <WhatsAppLogs 
-                logs={state.whatsAppLogs || []}
-                onResendMessage={handleResendWhatsAppMessage}
+                adminPassword={state.centerSettings?.password || ''}
+                onLogAction={(msg, cat) => handleStateChange({ ...state }, msg, cat)}
               />
             )}
 
