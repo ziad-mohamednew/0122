@@ -3,13 +3,16 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "main": "electron-main.cjs",
   "scripts": {
     "dev": "tsx server.ts",
     "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "start": "node dist/server.cjs",
     "preview": "vite preview",
-    "clean": "rm -rf dist server.js server.cjs",
-    "lint": "tsc --noEmit"
+    "clean": "rm -rf dist server.js server.cjs dist-desktop",
+    "lint": "tsc --noEmit",
+    "electron:dev": "vite",
+    "electron:build": "vite build && electron-builder --win"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
@@ -30,10 +33,32 @@
     "@types/node": "^22.14.0",
     "@types/qrcode": "^1.5.6",
     "autoprefixer": "^10.4.21",
+    "electron": "^42.3.3",
+    "electron-builder": "^26.8.1",
     "esbuild": "^0.25.0",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.3"
+  },
+  "build": {
+    "appId": "com.educenter.app",
+    "productName": "بوابة السنتر التعليمي",
+    "directories": {
+      "output": "dist-desktop"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "assets/icon.png"
+    },
+    "files": [
+      "dist/**/*",
+      "electron-main.cjs",
+      "preload.cjs",
+      "package.json"
+    ],
+    "asar": true
   }
 }
