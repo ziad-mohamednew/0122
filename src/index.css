@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
+@variant dark (&:where(.dark, .dark *));
 
 @theme {
   --font-sans: "Inter", "Cairo", "Segoe UI", system-ui, sans-serif;
@@ -30,6 +31,12 @@ body {
   font-family: var(--font-sans);
   background-color: #f8fafc; /* slate-50 */
   color: #1e293b; /* slate-800 */
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+html.dark body {
+  background-color: #0f172a; /* slate-900 */
+  color: #f1f5f9; /* slate-100 */
 }
 
 /* Custom fade effects */

@@ -26,7 +26,9 @@ import {
   Loader2,
   UserCog,
   Calculator,
-  MessageSquare
+  MessageSquare,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 // Import Types
@@ -50,6 +52,35 @@ import WhatsAppLogs from './components/WhatsAppLogs';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [darkMode, setDarkMode] = useState<boolean>(() => {
+    try {
+      const storedTheme = localStorage.getItem('theme');
+      if (storedTheme) {
+        return storedTheme === 'dark';
+      }
+    } catch {
+      // ignore
+    }
+    try {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      if (darkMode) {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+      }
+    } catch (e) {
+      console.error("Dark Mode toggle failed:", e);
+    }
+  }, [darkMode]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
@@ -909,7 +940,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col md:flex-row font-sans" dir="rtl">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#070b12] text-slate-800 dark:text-slate-100 flex flex-col md:flex-row font-sans transition-colors duration-300" dir="rtl">
       
       {/* SIDEBAR ON RIGHT - RTL layout */}
       <aside className="hidden md:flex flex-col w-64 bg-slate-900 text-white shrink-0 border-l border-slate-800 shadow-xl relative z-10">
@@ -934,15 +965,27 @@ export default function App() {
             </div>
           </div>
           
-          {/* Quick Edit Center Info Button */}
-          <button
-            type="button"
-            onClick={() => setIsSettingsOpen(true)}
-            className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors shrink-0"
-            title="تعديل بيانات وهوية السنتر"
-          >
-            <Settings className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-1 shrink-0">
+            {/* Quick Theme Switcher */}
+            <button
+              type="button"
+              onClick={() => setDarkMode(!darkMode)}
+              className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-all cursor-pointer"
+              title={darkMode ? "الوضع النهاري" : "الوضع الليلي"}
+            >
+              {darkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-300" />}
+            </button>
+
+            {/* Quick Edit Center Info Button */}
+            <button
+              type="button"
+              onClick={() => setIsSettingsOpen(true)}
+              className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors"
+              title="تعديل بيانات وهوية السنتر"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Navigation panel Links */}
@@ -1122,13 +1165,25 @@ export default function App() {
           </span>
         </div>
         
-        <button 
-          type="button" 
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="text-slate-300 hover:text-white p-1 rounded-sm focus:outline-hidden"
-        >
-          {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
+        <div className="flex items-center gap-3">
+          {/* Quick theme switcher for mobile users */}
+          <button
+            type="button"
+            onClick={() => setDarkMode(!darkMode)}
+            className="text-slate-300 hover:text-white p-1.5 rounded-lg focus:outline-none cursor-pointer transition-colors"
+            title={darkMode ? "الوضع النهاري" : "الوضع الليلي"}
+          >
+            {darkMode ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-slate-400" />}
+          </button>
+
+          <button 
+            type="button" 
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="text-slate-300 hover:text-white p-1 rounded-sm focus:outline-none"
+          >
+            {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
       </header>
 
       {/* MOBILE DRAWER SIDEBAR NAVIGATION */}

@@ -265,10 +265,10 @@ export default function AttendanceSheet({
     <div className="space-y-6 text-right" dir="rtl">
       
       {/* Top Header Card */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-xs">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs transition-colors">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">تحضير الحصص اليومي والغياب الغيابي</h1>
-          <p className="text-slate-500 text-sm mt-1">اختيار المجموعة لإجراء الحصر، مع دعم التحضير الذكي ببطاقات QR.</p>
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-105">تحضير الحصص اليومي والغياب الغيابي</h1>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">اختيار المجموعة لإجراء الحصر، مع دعم التحضير الذكي ببطاقات QR.</p>
         </div>
         
         {/* QR Scanner Trigger */}
@@ -300,12 +300,12 @@ export default function AttendanceSheet({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         
         {/* Select group */}
-        <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-2xs space-y-2">
-          <label className="block text-slate-700 text-xs font-bold">المجموعة التعليمية المستهدفة</label>
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-100 dark:border-slate-808 shadow-2xs space-y-2 transition-colors">
+          <label className="block text-slate-700 dark:text-slate-300 text-xs font-bold">المجموعة التعليمية المستهدفة</label>
           <select 
             value={selectedGroupId}
             onChange={(e) => setSelectedGroupId(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-700 text-sm focus:outline-hidden"
+            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-700 dark:text-slate-300 text-sm focus:outline-hidden"
           >
             <option value="">-- اختر المجموعة --</option>
             {groups.map(g => {
@@ -318,8 +318,8 @@ export default function AttendanceSheet({
         </div>
 
         {/* Select date */}
-        <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-2xs space-y-2">
-          <label className="block text-slate-700 text-xs font-bold">تاريخ الحصة</label>
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-100 dark:border-slate-800 shadow-2xs space-y-2 transition-colors">
+          <label className="block text-slate-700 dark:text-slate-300 text-xs font-bold">تاريخ الحصة</label>
           <div className="relative">
             <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
             <input 
@@ -327,7 +327,7 @@ export default function AttendanceSheet({
               value={attendanceDate}
               onChange={(e) => handleDateChange(e.target.value)}
               max={todayStr}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl pr-10 pl-4 py-2 text-slate-700 text-sm focus:outline-hidden"
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl pr-10 pl-4 py-2 text-slate-700 dark:text-slate-300 text-sm focus:outline-hidden"
             />
           </div>
         </div>
@@ -336,27 +336,27 @@ export default function AttendanceSheet({
 
       {/* Main Attendance Sheet Section */}
       {!selectedGroupId ? (
-        <div className="bg-white p-20 text-center text-slate-400 rounded-2xl border border-slate-100 shadow-xs">
+        <div className="bg-white dark:bg-slate-900 p-20 text-center text-slate-400 dark:text-slate-500 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs transition-colors">
           يرجى اختيار المجموعة التعليمية والمادة الدراسية لعرض قائمة حضور الطلاب وكشوفات التحضير.
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-xs overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs overflow-hidden transition-colors">
           
           {/* Controls toolbar */}
-          <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-center bg-slate-50/50 gap-4">
+          <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-center bg-slate-50/50 dark:bg-slate-950/45 gap-4">
             
             <div className="flex gap-2">
               <button 
                 type="button"
                 onClick={handleMarkAllPresent}
-                className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold px-4 py-2 rounded-lg transition"
+                className="bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-emerald-800 dark:text-emerald-400 text-xs font-bold px-4 py-2 rounded-lg transition"
               >
                 ✓ تحضير الكل حاضر
               </button>
               <button 
                 type="button"
                 onClick={handleMarkAllAbsent}
-                className="bg-rose-50 hover:bg-rose-100 text-rose-800 text-xs font-bold px-4 py-2 rounded-lg transition"
+                className="bg-rose-50 dark:bg-rose-955/40 hover:bg-rose-100 dark:hover:bg-rose-900/40 text-rose-800 dark:text-rose-400 text-xs font-bold px-4 py-2 rounded-lg transition"
               >
                 ✕ تغييب كافة الطلاب
               </button>
@@ -370,7 +370,7 @@ export default function AttendanceSheet({
                 placeholder="تصفية بقائمة الحضور الحالية..."
                 value={studentSearch}
                 onChange={(e) => setStudentSearch(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-xl pr-9 pl-3 py-1.5 text-xs text-slate-700 focus:outline-hidden"
+                className="w-full bg-white dark:bg-slate-950 border border-slate-202 dark:border-slate-800 rounded-xl pr-9 pl-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 focus:outline-hidden"
               />
             </div>
 
@@ -378,31 +378,31 @@ export default function AttendanceSheet({
 
           {/* Table list of students */}
           {groupStudents.length === 0 ? (
-            <div className="p-16 text-center text-slate-400">
+            <div className="p-16 text-center text-slate-400 dark:text-slate-500">
               لا يتوفر أي طلاب مسجلين بهذه المجموعة التعليمية حالياً لمراجعتهم.
             </div>
           ) : (
-            <div className="overflow-x-auto text-slate-700">
+            <div className="overflow-x-auto text-slate-700 dark:text-slate-300">
               <table className="w-full text-right border-collapse">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-150 text-slate-600 text-xs font-bold">
+                  <tr className="bg-slate-50 dark:bg-slate-950 border-b border-slate-150 dark:border-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold">
                     <th className="p-4 w-20">كود الطالب</th>
                     <th className="p-4">اسم الطالب</th>
                     <th className="p-4">رقم الهاتف</th>
                     <th className="p-4 text-center w-80">حالة حضور الحصة</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {groupStudents.map((student) => {
                     const status = currentRecords[student.id];
                     return (
-                      <tr key={student.id} className="hover:bg-slate-50/30 transition-colors">
-                        <td className="p-4 font-mono font-bold text-xs text-slate-500">#{student.code}</td>
+                      <tr key={student.id} className="hover:bg-slate-50/30 dark:hover:bg-slate-805/10 transition-colors">
+                        <td className="p-4 font-mono font-bold text-xs text-slate-500 dark:text-slate-400">#{student.code}</td>
                         <td className="p-4">
-                          <p className="font-bold text-slate-800 text-sm">{student.name}</p>
-                          <span className="text-[10px] text-slate-400 block mt-0.5">مسجل منذ {new Date(student.createdAt).toLocaleDateString('ar-EG')}</span>
+                          <p className="font-bold text-slate-800 dark:text-slate-100 text-sm">{student.name}</p>
+                          <span className="text-[10px] text-slate-400 dark:text-slate-505 block mt-0.5">مسجل منذ {new Date(student.createdAt).toLocaleDateString('ar-EG')}</span>
                         </td>
-                        <td className="p-4 text-xs text-slate-500">{student.phone}</td>
+                        <td className="p-4 text-xs text-slate-500 dark:text-slate-400">{student.phone}</td>
                         <td className="p-4">
                           <div className="flex justify-center items-center gap-2">
                             
@@ -413,7 +413,7 @@ export default function AttendanceSheet({
                               className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
                                 status === 'present' 
                                   ? 'bg-emerald-500 text-white shadow-xs' 
-                                  : 'bg-slate-50 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700'
+                                  : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-700 dark:hover:text-emerald-400'
                               }`}
                             >
                               <CheckCircle className="w-4 h-4" />
@@ -427,7 +427,7 @@ export default function AttendanceSheet({
                               className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
                                 status === 'absent' 
                                   ? 'bg-rose-500 text-white shadow-xs' 
-                                  : 'bg-slate-50 text-slate-600 hover:bg-rose-50 hover:text-rose-700'
+                                  : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-rose-50 dark:hover:bg-rose-955/40 hover:text-rose-700 dark:hover:text-rose-450'
                               }`}
                             >
                               <XCircle className="w-4 h-4" />
@@ -441,7 +441,7 @@ export default function AttendanceSheet({
                               className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
                                 status === 'excused' 
                                   ? 'bg-amber-500 text-white shadow-xs' 
-                                  : 'bg-slate-50 text-slate-600 hover:bg-amber-50 hover:text-amber-700'
+                                  : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-amber-50 dark:hover:bg-amber-955/40 hover:text-amber-700 dark:hover:text-amber-450'
                               }`}
                             >
                               <AlertCircle className="w-4 h-4" />
@@ -459,15 +459,15 @@ export default function AttendanceSheet({
           )}
 
           {/* Footer of attendance sheet */}
-          <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-between text-xs text-slate-500 font-bold">
+          <div className="p-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800 flex justify-between text-xs text-slate-500 dark:text-slate-400 font-bold">
             <div className="flex gap-4">
               <span>إجمالي المسجلين بالجروب: <strong>{groupStudents.length} طلاب</strong></span>
               <span>•</span>
-              <span className="text-emerald-700">عدد الحضور: <strong>{Object.values(currentRecords).filter(v => v === 'present').length}</strong></span>
+              <span className="text-emerald-700 dark:text-emerald-400">عدد الحضور: <strong>{Object.values(currentRecords).filter(v => v === 'present').length}</strong></span>
               <span>•</span>
-              <span className="text-rose-600">عدد الغياب: <strong>{Object.values(currentRecords).filter(v => v === 'absent').length}</strong></span>
+              <span className="text-rose-600 dark:text-rose-400">عدد الغياب: <strong>{Object.values(currentRecords).filter(v => v === 'absent').length}</strong></span>
             </div>
-            <span className="text-slate-400">تحفظ التعديلات لحظياً في السحابة</span>
+            <span className="text-slate-400 dark:text-slate-550">تحفظ التعديلات لحظياً في السحابة</span>
           </div>
 
         </div>

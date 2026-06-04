@@ -117,12 +117,12 @@ export default function Dashboard({ students, groups, teachers, payments, onNavi
       dir="rtl"
     >
       {/* Title & Date */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-xs">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs transition-colors">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-slate-800 tracking-tight">نظرة عامة والتحليلات الحية</h1>
-          <p className="text-slate-500 text-sm mt-1">متابعة الأداء المالي، حضور الطلاب، وإحصائيات المجموعات لحظة بلحظة.</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">نظرة عامة والتحليلات الحية</h1>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">متابعة الأداء المالي، حضور الطلاب، وإحصائيات المجموعات لحظة بلحظة.</p>
         </div>
-        <div className="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-xl text-slate-600 text-sm font-medium border border-slate-100">
+        <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-950 px-4 py-2 rounded-xl text-slate-600 dark:text-slate-350 text-sm font-medium border border-slate-100 dark:border-slate-850 transition-colors">
           <Calendar className="w-4 h-4 text-emerald-500" />
           <span>تاريخ اليوم: {new Date().toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
         </div>
@@ -130,25 +130,24 @@ export default function Dashboard({ students, groups, teachers, payments, onNavi
 
       {/* Grid Indicators */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        
         {/* Revenue Card */}
         <motion.div 
           variants={itemVariants}
-          className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs relative overflow-hidden"
+          className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs relative overflow-hidden transition-colors"
         >
           <div className="flex justify-between items-start">
-            <span className="text-slate-500 text-xs font-semibold">إجمالي الإيرادات المحصلة</span>
-            <div className="bg-emerald-50 text-emerald-700 p-1.5 rounded-lg border border-emerald-250">
+            <span className="text-slate-500 dark:text-slate-400 text-xs font-semibold">إجمالي الإيرادات المحصلة</span>
+            <div className="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 p-1.5 rounded-lg border border-emerald-250 dark:border-emerald-900/50">
               <TrendingUp className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2.5 flex items-baseline gap-1">
-            <span className="text-2xl font-bold text-slate-900 tracking-tight">
+            <span className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
               {totalRevenue.toLocaleString('ar-EG')}
             </span>
-            <span className="text-slate-400 font-medium text-[10px]">جنيه مصري</span>
+            <span className="text-slate-400 dark:text-slate-500 font-medium text-[10px]">جنيه مصري</span>
           </div>
-          <p className="mt-2 text-[10px] text-emerald-600 font-medium flex items-center gap-1">
+          <p className="mt-2 text-[10px] text-emerald-600 dark:text-emerald-450 font-medium flex items-center gap-1">
             <ArrowUpRight className="w-3 h-3" />
             <span>مزامنة تلقائية سحابية</span>
           </p>
@@ -157,19 +156,19 @@ export default function Dashboard({ students, groups, teachers, payments, onNavi
         {/* Students Card */}
         <motion.div 
           variants={itemVariants}
-          className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs relative overflow-hidden"
+          className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs relative overflow-hidden transition-colors"
         >
           <div className="flex justify-between items-start">
-            <span className="text-slate-500 text-xs font-semibold">الطلاب النشطين بالسنتر</span>
-            <div className="bg-indigo-50 text-indigo-700 p-1.5 rounded-lg border border-indigo-200">
+            <span className="text-slate-500 dark:text-slate-400 text-xs font-semibold">الطلاب النشطين بالسنتر</span>
+            <div className="bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 p-1.5 rounded-lg border border-indigo-200 dark:border-indigo-900/50">
               <Users className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2.5 flex items-baseline gap-1">
-            <span className="text-2xl font-bold text-slate-900 tracking-tight">{totalStudents}</span>
-            <span className="text-slate-400 font-medium text-[10px]">طالب مسجل</span>
+            <span className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">{totalStudents}</span>
+            <span className="text-slate-400 dark:text-slate-500 font-medium text-[10px]">طالب مسجل</span>
           </div>
-          <p className="mt-2 text-[10px] text-slate-500 flex items-center gap-1">
+          <p className="mt-2 text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
             <span>بكامل القوة الاستيعابية</span>
           </p>
@@ -178,19 +177,19 @@ export default function Dashboard({ students, groups, teachers, payments, onNavi
         {/* Active Groups Card */}
         <motion.div 
           variants={itemVariants}
-          className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs relative overflow-hidden"
+          className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs relative overflow-hidden transition-colors"
         >
           <div className="flex justify-between items-start">
-            <span className="text-slate-500 text-xs font-semibold">المجموعات التعليمية</span>
-            <div className="bg-amber-50 text-amber-700 p-1.5 rounded-lg border border-amber-200">
+            <span className="text-slate-500 dark:text-slate-400 text-xs font-semibold">المجموعات التعليمية</span>
+            <div className="bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 p-1.5 rounded-lg border border-amber-200 dark:border-amber-900/50">
               <Layers className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2.5 flex items-baseline gap-1">
-            <span className="text-2xl font-bold text-slate-900 tracking-tight">{activeGroups}</span>
-            <span className="text-slate-400 font-medium text-[10px]">مجموعة نشطة</span>
+            <span className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">{activeGroups}</span>
+            <span className="text-slate-400 dark:text-slate-500 font-medium text-[10px]">مجموعة نشطة</span>
           </div>
-          <p className="mt-2 text-[10px] text-amber-600 flex items-center gap-1">
+          <p className="mt-2 text-[10px] text-amber-600 dark:text-amber-450 flex items-center gap-1">
             <Clock className="w-3 h-3" />
             <span>مواعيد أسبوعية متعددة</span>
           </p>
@@ -201,23 +200,23 @@ export default function Dashboard({ students, groups, teachers, payments, onNavi
           variants={itemVariants}
           className={`p-4 rounded-xl border shadow-2xs relative overflow-hidden transition-colors ${
             totalDuesAndLates.count > 0 
-              ? 'bg-rose-50 border-rose-300' 
-              : 'bg-white border-slate-200'
+              ? 'bg-rose-50 dark:bg-rose-950/20 border-rose-300 dark:border-rose-900/40' 
+              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'
           }`}
         >
           <div className="flex justify-between items-start">
-            <span className="text-slate-500 text-xs font-semibold">الاشتراكات المتأخرة</span>
-            <div className={`p-1.5 rounded-lg border ${totalDuesAndLates.count > 0 ? 'bg-rose-100 text-rose-700 border-rose-300' : 'bg-slate-50 text-slate-550 border-slate-205'}`}>
+            <span className="text-slate-500 dark:text-slate-400 text-xs font-semibold">الاشتراكات المتأخرة</span>
+            <div className={`p-1.5 rounded-lg border ${totalDuesAndLates.count > 0 ? 'bg-rose-100 dark:bg-rose-900/60 text-rose-700 dark:text-rose-350 border-rose-300 dark:border-rose-800' : 'bg-slate-50 dark:bg-slate-800 text-slate-550 dark:text-slate-400 border-slate-205 dark:border-slate-700'}`}>
               <AlertCircle className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2.5 flex items-baseline gap-1">
-            <span className={`text-2xl font-bold tracking-tight ${totalDuesAndLates.count > 0 ? 'text-rose-700' : 'text-slate-900'}`}>
+            <span className={`text-2xl font-bold tracking-tight ${totalDuesAndLates.count > 0 ? 'text-rose-700 dark:text-rose-450' : 'text-slate-900 dark:text-white'}`}>
               {totalDuesAndLates.amount.toLocaleString('ar-EG')}
             </span>
-            <span className="text-slate-400 font-medium text-[10px]">جنيه مديونية</span>
+            <span className="text-slate-400 dark:text-slate-350 font-medium text-[10px]">جنيه مديونية</span>
           </div>
-          <p className="mt-2 text-[10px] text-rose-700 flex items-center gap-1 font-semibold">
+          <p className="mt-2 text-[10px] text-rose-700 dark:text-rose-400 flex items-center gap-1 font-semibold">
             <span>{totalDuesAndLates.count} طلاب متأخرين</span>
           </p>
         </motion.div>
@@ -231,23 +230,23 @@ export default function Dashboard({ students, groups, teachers, payments, onNavi
         <motion.div variants={itemVariants} className="lg:col-span-4 space-y-6">
           
           {/* Subjects stats */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs">
-            <h3 className="font-bold text-slate-800 text-base mb-4">كثافة المجموعات حسب المادة</h3>
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs transition-colors">
+            <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base mb-4">كثافة المجموعات حسب المادة</h3>
             {subjectDistribution.length === 0 ? (
-              <p className="text-slate-400 text-center py-6 text-sm">لا توجد مجموعات مسجلة بعد</p>
+              <p className="text-slate-400 dark:text-slate-500 text-center py-6 text-sm">لا توجد مجموعات مسجلة بعد</p>
             ) : (
               <div className="space-y-4">
                 {subjectDistribution.map(({ subject, count }) => {
                   const percent = Math.min(100, Math.round((count / activeGroups) * 100));
                   return (
                     <div key={subject} className="space-y-1">
-                      <div className="flex justify-between text-xs font-semibold text-slate-600">
+                      <div className="flex justify-between text-xs font-semibold text-slate-600 dark:text-slate-300">
                         <span>{subject}</span>
                         <span>{count} مجموعة ({percent}%)</span>
                       </div>
-                      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                      <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
                         <div 
-                          className="bg-indigo-600 h-full rounded-full transition-all duration-500" 
+                          className="bg-indigo-600 dark:bg-indigo-500 h-full rounded-full transition-all duration-500" 
                           style={{ width: `${percent}%` }}
                         />
                       </div>
@@ -259,33 +258,35 @@ export default function Dashboard({ students, groups, teachers, payments, onNavi
           </div>
 
           {/* Leaders board / Teachers Financial balances */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs">
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs transition-colors">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-slate-800 text-base">مستحقات المدرسين (من الحصص الشغالة)</h3>
+              <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base">مستحقات المدرسين (من الحصص الشغالة)</h3>
               <Award className="w-5 h-5 text-amber-500" />
             </div>
             {teacherStats.length === 0 ? (
-              <p className="text-slate-400 text-center py-6 text-sm">لا يتوفر معلمون مسجلون بعد</p>
+              <p className="text-slate-400 dark:text-slate-500 text-center py-6 text-sm">لا يتوفر معلمون مسجلون بعد</p>
             ) : (
               <div className="space-y-3">
                 {teacherStats.map((teacher, index) => (
-                  <div key={teacher.name} className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 transition-colors">
+                  <div key={teacher.name} className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-550/5 dark:hover:bg-slate-800/40 transition-colors">
                     <div className="flex items-center gap-3">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
-                        index === 0 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'
+                        index === 0 
+                          ? 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400' 
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
                       }`}>
                         {index + 1}
                       </div>
                       <div>
-                        <p className="font-bold text-slate-800 text-sm">{teacher.name}</p>
-                        <span className="text-slate-400 text-xs">{teacher.subject}</span>
+                        <p className="font-bold text-slate-800 dark:text-slate-200 text-sm">{teacher.name}</p>
+                        <span className="text-slate-400 dark:text-slate-550 text-xs">{teacher.subject}</span>
                       </div>
                     </div>
                     <div className="text-left">
-                      <p className="font-bold text-slate-700 text-sm">
+                      <p className="font-bold text-slate-700 dark:text-slate-300 text-sm">
                         {Math.round(teacher.earned).toLocaleString('ar-EG')} جنيه
                       </p>
-                      <span className="text-slate-400 text-[10px]">مستحق معلم</span>
+                      <span className="text-slate-400 dark:text-slate-500 text-[10px]">مستحق معلم</span>
                     </div>
                   </div>
                 ))}
@@ -299,35 +300,35 @@ export default function Dashboard({ students, groups, teachers, payments, onNavi
         <motion.div variants={itemVariants} className="lg:col-span-8 space-y-6">
           
           {/* Recent Operations log */}
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-xs overflow-hidden">
-            <div className="p-6 border-b border-slate-50 flex justify-between items-center bg-linear-to-l from-indigo-50/15">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs overflow-hidden transition-colors">
+            <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center bg-linear-to-l from-indigo-50/15 dark:from-indigo-950/20">
               <div>
-                <h3 className="font-bold text-slate-800 text-base">آخر عمليات التحصيل المالي</h3>
-                <p className="text-slate-500 text-xs mt-1">عرض الإيصالات والدفعات الأخيرة المدخلة إلى السنتر.</p>
+                <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base">آخر عمليات التحصيل المالي</h3>
+                <p className="text-slate-500 dark:text-slate-450 text-xs mt-1">عرض الإيصالات والدفعات الأخيرة المدخلة إلى السنتر.</p>
               </div>
               <button 
                 onClick={() => onNavigate('payments')}
-                className="text-[#4F46E5] hover:text-indigo-800 text-xs font-bold transition-colors"
+                className="text-[#4F46E5] dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 text-xs font-bold transition-colors"
               >
                 دفتر الحسابات ←
               </button>
             </div>
             
             {recentPayments.length === 0 ? (
-              <div className="p-8 text-center text-slate-400 text-sm">
+              <div className="p-8 text-center text-slate-400 dark:text-slate-500 text-sm">
                 لا توجد مدفوعات مسجلة اليوم. ابدأ بتسجيل السداد لتحديث الإحصاءات.
               </div>
             ) : (
-              <div className="divide-y divide-slate-50">
+              <div className="divide-y divide-slate-50 dark:divide-slate-800">
                 {recentPayments.map((p) => (
-                  <div key={p.id} className="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 hover:bg-slate-50/50 transition-colors">
+                  <div key={p.id} className="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 hover:bg-slate-50/50 dark:hover:bg-slate-850/30 transition-colors">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-700 font-extrabold text-sm">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/40 flex items-center justify-center text-emerald-700 dark:text-emerald-400 font-extrabold text-sm border border-emerald-200 dark:border-emerald-900/40">
                         💵
                       </div>
                       <div>
-                        <p className="font-bold text-slate-800 text-sm">{p.studentName}</p>
-                        <div className="flex items-center gap-2 text-slate-400 text-xs mt-1">
+                        <p className="font-bold text-slate-800 dark:text-slate-200 text-sm">{p.studentName}</p>
+                        <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500 text-xs mt-1">
                           <span>{p.notes || "دفع اشتراك شهري"}</span>
                           <span>•</span>
                           <span>{new Date(p.timestamp).toLocaleTimeString('ar-EG', { hour: 'numeric', minute: '2-digit' })}</span>
@@ -335,7 +336,7 @@ export default function Dashboard({ students, groups, teachers, payments, onNavi
                       </div>
                     </div>
                     <div className="flex items-center gap-3 self-end sm:self-center">
-                      <span className="bg-emerald-50 text-emerald-700 text-xs font-bold px-3 py-1 rounded-full">
+                      <span className="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-450 text-xs font-bold px-3 py-1 rounded-full border border-emerald-250/30">
                         +{p.amount} جنيه
                       </span>
                     </div>
@@ -346,38 +347,38 @@ export default function Dashboard({ students, groups, teachers, payments, onNavi
           </div>
 
           {/* Late payments alerts list */}
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-xs overflow-hidden">
-            <div className="p-6 border-b border-slate-50 flex justify-between items-center bg-linear-to-l from-rose-50/15">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs overflow-hidden transition-colors">
+            <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center bg-linear-to-l from-rose-50/15 dark:from-rose-950/20">
               <div>
-                <h3 className="font-bold text-slate-800 text-base text-rose-700">الطلاب المتأخرين عن الدفع (مطلوب مراجعتهم)</h3>
-                <p className="text-slate-500 text-xs mt-1">الطلاب ذوي الأرصدة السلبية الذين بحاجة إلى تذكير بالدفع.</p>
+                <h3 className="font-bold text-slate-805 dark:text-rose-400 text-base">الطلاب المتأخرين عن الدفع (مطلوب مراجعتهم)</h3>
+                <p className="text-slate-500 dark:text-slate-455 text-xs mt-1">الطلاب ذوي الأرصدة السلبية الذين بحاجة إلى تذكير بالدفع.</p>
               </div>
               <button 
                 onClick={() => onNavigate('students')}
-                className="text-rose-600 hover:text-rose-800 text-xs font-bold transition-colors"
+                className="text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 text-xs font-bold transition-colors"
               >
                 إدارة ملفات الطلاب ←
               </button>
             </div>
 
             {students.filter(s => s.balance < 0).length === 0 ? (
-              <div className="p-8 text-center text-emerald-600 text-sm font-semibold">
+              <div className="p-8 text-center text-emerald-600 dark:text-emerald-400 text-sm font-semibold">
                 🎉 جميع الطلاب المسجلين قاموا بسداد مستحقاتهم بالكامل!
               </div>
             ) : (
-              <div className="divide-y divide-slate-50 max-h-[300px] overflow-y-auto">
+              <div className="divide-y divide-slate-50 dark:divide-slate-800 max-h-[300px] overflow-y-auto">
                 {students.filter(s => s.balance < 0).map((s) => (
-                  <div key={s.id} className="p-4 flex justify-between items-center hover:bg-slate-50/50 transition-colors">
+                  <div key={s.id} className="p-4 flex justify-between items-center hover:bg-slate-50/50 dark:hover:bg-slate-850/30 transition-colors">
                     <div>
-                      <p className="font-bold text-slate-800 text-sm">{s.name}</p>
-                      <div className="flex gap-4 text-xs text-slate-400 mt-1">
+                      <p className="font-bold text-slate-800 dark:text-slate-200 text-sm">{s.name}</p>
+                      <div className="flex gap-4 text-xs text-slate-400 dark:text-slate-500 mt-1">
                         <span>كود الطالب: {s.code}</span>
                         <span>•</span>
                         <span>هاتف ولي الأمر: {s.parentPhone}</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="bg-rose-100/70 text-rose-700 font-bold px-2.5 py-1 rounded-lg text-sm">
+                      <span className="bg-rose-100/70 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 font-bold px-2.5 py-1 rounded-lg text-sm border border-rose-200/40">
                         {s.balance} جنيه
                       </span>
                       <a 

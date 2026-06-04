@@ -87,6 +87,15 @@ export default function GroupsList({
     setSchedules(updated);
   };
 
+  const startEditTeacher = (t: Teacher) => {
+    setEditingTeacherId(t.id);
+    setTeacherName(t.name);
+    setTeacherSubject(t.subject);
+    setTeacherPhone(t.phone);
+    setTeacherCommission(t.commissionRate);
+    setTeacherGender(t.gender);
+  };
+
   // Submit Teacher
   const handleTeacherSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,19 +159,21 @@ export default function GroupsList({
     <div className="space-y-6 text-right" dir="rtl">
       
       {/* Top Controls */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-xs">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs transition-colors">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">إدارة القاعات والمجموعات الدراسيّة</h1>
-          <p className="text-slate-500 text-sm mt-1">إنشاء المجموعات وتحديد مواعيدها المتعددة، وتخصيص نسب المعلمين.</p>
+          <h1 className="text-2xl font-bold text-slate-805 dark:text-slate-100">إدارة القاعات والمجموعات الدراسيّة</h1>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">إنشاء المجموعات وتحديد مواعيدها المتعددة، وتخصيص نسب المعلمين.</p>
         </div>
         
         {/* Toggle navigation */}
-        <div className="flex gap-2 bg-slate-100 p-1 rounded-xl">
+        <div className="flex gap-2 bg-slate-100 dark:bg-slate-950 p-1 rounded-xl transition-colors">
           <button 
             type="button"
             onClick={() => setActiveSubTab('groups')}
             className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
-              activeSubTab === 'groups' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600 hover:text-slate-800'
+              activeSubTab === 'groups' 
+                ? 'bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 shadow-xs' 
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-200'
             }`}
           >
             📋 مجموعات التدريس
@@ -171,7 +182,9 @@ export default function GroupsList({
             type="button"
             onClick={() => setActiveSubTab('teachers')}
             className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
-              activeSubTab === 'teachers' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600 hover:text-slate-800'
+              activeSubTab === 'teachers' 
+                ? 'bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 shadow-xs' 
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-200'
             }`}
           >
             👨‍🏫 الكادر التعليمي (المعلمون)
@@ -218,54 +231,46 @@ export default function GroupsList({
               { label: "مدرسين للذكور", value: String(filteredTeachers.filter(t => t.gender !== 'female').length) },
               { label: "مدرسات للإناث", value: String(filteredTeachers.filter(t => t.gender === 'female').length) }
             ];
-            exportToPDF("كشف تفصيلي بالكادر التعليمي ببياناتهم ونسبهم", headers, rows, undefined, summary);
-          };
-
-          const startEditTeacher = (t: Teacher) => {
-            setEditingTeacherId(t.id);
-            setTeacherName(t.name);
-            setTeacherPhone(t.phone);
-            setTeacherSubject(t.subject);
-            setTeacherCommission(t.commissionRate);
-            setTeacherGender(t.gender || 'male');
+            exportToPDF("كشف تفصيلي بالكادر التعليمي (المعلمون)", headers, rows, undefined, summary);
           };
 
           return (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Left panel: Add Teacher Form */}
-              <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs h-fit">
-                <h3 className="font-bold text-slate-800 border-b border-slate-100 pb-3 mb-4 flex items-center gap-2">
-                  <UserPlus className="w-5 h-5 text-indigo-600" />
+            // Removed corrupted line: �              {/* Left panel: Add Teacher Form */}
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs h-fit transition-colors">
+                <h3 className="font-bold text-slate-805 dark:text-slate-100 border-b border-slate-100 dark:border-slate-800 pb-3 mb-4 flex items-center gap-2">
+                  <UserPlus className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                   <span>{editingTeacherId ? 'تعديل بيانات المعلم' : 'إضافة معلم جديد'}</span>
                 </h3>
 
                 <form onSubmit={handleTeacherSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-slate-600 text-xs font-semibold mb-1.5">الاسم ثلاثي للمعلم</label>
+                    <label className="block text-slate-600 dark:text-slate-350 text-xs font-semibold mb-1.5">الاسم ثلاثي للمعلم</label>
                     <input 
                       type="text" 
                       value={teacherName} 
                       onChange={(e) => setTeacherName(e.target.value)} 
                       placeholder="مثال: أ. محمود السعدني"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-700 text-sm focus:outline-hidden focus:border-indigo-500 transition-colors"
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-700 dark:text-slate-200 text-sm focus:outline-hidden focus:border-indigo-550 transition-colors"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-slate-600 text-xs font-semibold mb-1.5">المادة الدراسية الأساسية</label>
+                    <label className="block text-slate-600 dark:text-slate-350 text-xs font-semibold mb-1.5">المادة الدراسية الأساسية</label>
                     <input 
                       type="text" 
                       value={teacherSubject} 
                       onChange={(e) => setTeacherSubject(e.target.value)} 
                       placeholder="الفيزياء، الكيمياء، إلخ..."
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-700 text-sm focus:outline-hidden focus:border-indigo-500 transition-colors"
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-700 dark:text-slate-200 text-sm focus:outline-hidden focus:border-indigo-505 transition-colors"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-slate-600 text-xs font-semibold mb-1.5">النوع (الجنس)</label>
-                    <div className="flex gap-4 bg-slate-50 p-3 rounded-xl border border-slate-150">
-                      <label className="flex items-center gap-1.5 cursor-pointer text-sm text-slate-700 font-bold">
+                    <label className="block text-slate-600 dark:text-slate-350 text-xs font-semibold mb-1.5">النوع (الجنس)</label>
+                    <div className="flex gap-4 bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-150 dark:border-slate-800">
+                      <label className="flex items-center gap-1.5 cursor-pointer text-sm text-slate-705 dark:text-slate-300 font-bold">
                         <input 
                           type="radio" 
                           name="teacherGenderForm" 
@@ -276,7 +281,7 @@ export default function GroupsList({
                         />
                         <span>ذكر ♂</span>
                       </label>
-                      <label className="flex items-center gap-1.5 cursor-pointer text-sm text-slate-700 font-bold">
+                      <label className="flex items-center gap-1.5 cursor-pointer text-sm text-slate-705 dark:text-slate-300 font-bold">
                         <input 
                           type="radio" 
                           name="teacherGenderForm" 
@@ -291,18 +296,18 @@ export default function GroupsList({
                   </div>
 
                   <div>
-                    <label className="block text-slate-600 text-xs font-semibold mb-1.5">رقم تليفون المعلم</label>
+                    <label className="block text-slate-600 dark:text-slate-350 text-xs font-semibold mb-1.5">رقم تليفون المعلم</label>
                     <input 
                       type="tel" 
                       value={teacherPhone} 
                       onChange={(e) => setTeacherPhone(e.target.value)} 
                       placeholder="مثال: 01023456789"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-700 text-sm focus:outline-hidden focus:border-indigo-500 transition-colors"
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-700 dark:text-slate-200 text-sm focus:outline-hidden focus:border-indigo-500 transition-colors"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-slate-600 text-xs font-semibold mb-1.5">نسبة المعلم (من رسوم الحصة/الاشتراك %)</label>
+                    <label className="block text-slate-600 dark:text-slate-355 text-xs font-semibold mb-1.5">نسبة المعلم (من رسوم الحصة/الاشتراك %)</label>
                     <div className="flex items-center gap-2">
                       <input 
                         type="number" 
@@ -310,22 +315,22 @@ export default function GroupsList({
                         max="100"
                         value={teacherCommission} 
                         onChange={(e) => setTeacherCommission(Number(e.target.value))} 
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-700 text-sm focus:outline-hidden focus:border-indigo-500 transition-colors"
+                        className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-700 dark:text-slate-200 text-sm focus:outline-hidden focus:border-indigo-500 transition-colors"
                       />
-                      <span className="text-slate-500 text-sm font-bold">%</span>
+                      <span className="text-slate-500 dark:text-slate-400 text-sm font-bold">%</span>
                     </div>
-                    <p className="text-[10px] text-slate-400 mt-1">يأخذ السنتر النسبة المتبقية تلقائياً عند الإيداع.</p>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">يأخذ السنتر النسبة المتبقية تلقائياً عند الإيداع.</p>
                   </div>
 
                   {teacherError && (
-                    <div className="p-3 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl text-xs font-semibold leading-relaxed">
+                    <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-100 dark:border-rose-900 text-rose-600 dark:text-rose-400 rounded-xl text-xs font-semibold leading-relaxed">
                       {teacherError}
                     </div>
                   )}
 
                   <button 
                     type="submit"
-                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl transition-all shadow-sm shadow-indigo-100 flex items-center justify-center gap-2 mt-2"
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 mt-2 cursor-pointer"
                   >
                     <Plus className="w-4 h-4" />
                     <span>{editingTeacherId ? 'تعديل وحفظ التغييرات' : 'حفظ بيانات المعلم'}</span>
@@ -342,7 +347,7 @@ export default function GroupsList({
                         setTeacherCommission(80);
                         setTeacherGender('male');
                       }}
-                      className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2 rounded-xl text-xs transition-colors mt-1"
+                      className="w-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold py-2 rounded-xl text-xs transition-colors mt-1"
                     >
                       إلغاء التعديل والعودة للإضافة
                     </button>
@@ -400,7 +405,7 @@ export default function GroupsList({
                 </div>
 
                 {filteredTeachers.length === 0 ? (
-                  <div className="bg-white p-12 text-center text-slate-400 rounded-2xl border border-slate-100 shadow-xs">
+                  <div className="bg-white dark:bg-slate-900 p-12 text-center text-slate-400 dark:text-slate-500 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs transition-colors">
                     لم نجد معلمين يطابقون خيارات التصفية المدخلة.
                   </div>
                 ) : (
@@ -411,16 +416,18 @@ export default function GroupsList({
                         <motion.div 
                           layout
                           key={t.id} 
-                          className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs hover:border-slate-200 transition-all flex flex-col justify-between"
+                          className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs hover:border-slate-200 dark:hover:border-slate-700 transition-all flex flex-col justify-between"
                         >
                           <div>
                             <div className="flex justify-between items-start">
                               <div className="flex gap-1.5 items-center">
-                                <div className="bg-indigo-50 text-indigo-700 w-8 h-8 rounded-xl flex items-center justify-center font-bold text-lg">
+                                <div className="bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-455 w-8 h-8 rounded-xl flex items-center justify-center font-bold text-lg">
                                   🎓
                                 </div>
                                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                                  t.gender === 'female' ? 'bg-purple-50 text-purple-700 border border-purple-100/50' : 'bg-sky-50 text-sky-700 border border-sky-100/50'
+                                  t.gender === 'female' 
+                                    ? 'bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400 border border-purple-100/50 dark:border-purple-900/40' 
+                                    : 'bg-sky-50 dark:bg-sky-955/40 text-sky-700 dark:text-sky-400 border border-sky-100/50 dark:border-sky-900/40'
                                 }`}>
                                   {t.gender === 'female' ? 'أنثى ♀' : 'ذكر ♂'}
                                 </span>
@@ -430,7 +437,7 @@ export default function GroupsList({
                                 <button 
                                   type="button" 
                                   onClick={() => startEditTeacher(t)}
-                                  className="text-indigo-600 hover:bg-indigo-50 p-1.5 rounded-lg transition-all text-xs"
+                                  className="text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 p-1.5 rounded-lg transition-all text-xs cursor-pointer"
                                   title="تعديل ملف المعلم"
                                 >
                                   📝 تعديل
@@ -451,7 +458,7 @@ export default function GroupsList({
                                       onDeleteTeacher(t.id);
                                     }
                                   }}
-                                  className="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg hover:bg-slate-50 transition-all"
+                                  className="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer"
                                   title="حذف المعلم"
                                 >
                                   <Trash2 className="w-4.5 h-4.5" />
@@ -460,27 +467,27 @@ export default function GroupsList({
                             </div>
 
                         <div className="mt-4">
-                          <h4 className="font-bold text-slate-800 text-base">{t.name}</h4>
-                          <span className="bg-slate-100 text-slate-600 text-xs px-2.5 py-0.5 rounded-md mt-1.5 inline-block">
+                          <h4 className="font-bold text-slate-800 dark:text-slate-100 text-base">{t.name}</h4>
+                          <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs px-2.5 py-0.5 rounded-md mt-1.5 inline-block">
                             مادة: {t.subject}
                           </span>
                         </div>
 
-                        <div className="mt-4 space-y-2 text-slate-500 text-xs border-t border-slate-50 pt-3">
+                        <div className="mt-4 space-y-2 text-slate-500 dark:text-slate-400 text-xs border-t border-slate-50 dark:border-slate-800 pt-3">
                           <p className="flex items-center gap-2">
-                            <Phone className="w-3.5 h-3.5 text-slate-400" />
+                            <Phone className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                             <span>موبايل: {t.phone}</span>
                           </p>
                           <p className="flex items-center gap-2">
-                            <Layers className="w-3.5 h-3.5 text-slate-400" />
+                            <Layers className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                             <span>المجموعات الحالية: {teacherGroups.length} مجموعات</span>
                           </p>
                         </div>
                       </div>
 
-                      <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center bg-slate-50 -mx-5 -mb-5 p-3 rounded-b-2xl">
-                        <span className="text-slate-500 text-xs font-semibold">نسبة العمولة:</span>
-                        <span className="text-emerald-700 font-extrabold text-sm bg-emerald-50 px-2 rounded-sm border border-emerald-100">{t.commissionRate}%</span>
+                      <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-950 -mx-5 -mb-5 p-3 rounded-b-2xl">
+                        <span className="text-slate-500 dark:text-slate-400 text-xs font-semibold">نسبة العمولة:</span>
+                        <span className="text-emerald-700 dark:text-emerald-400 font-extrabold text-sm bg-emerald-50 dark:bg-emerald-950/40 px-2 rounded-sm border border-emerald-100 dark:border-emerald-900/40">{t.commissionRate}%</span>
                       </div>
                     </motion.div>
                   );
@@ -494,48 +501,48 @@ export default function GroupsList({
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left panel: Add Group Form */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs h-fit">
-            <h3 className="font-bold text-slate-800 border-b border-slate-100 pb-3 mb-4 flex items-center gap-2">
-              <Layers className="w-5 h-5 text-indigo-600" />
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs h-fit transition-colors">
+            <h3 className="font-bold text-slate-800 dark:text-slate-100 border-b border-slate-100 dark:border-slate-800 pb-3 mb-4 flex items-center gap-2">
+              <Layers className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
               <span>إنشاء مجموعة جديدة</span>
             </h3>
 
             <form onSubmit={handleGroupSubmit} className="space-y-4">
               <div>
-                <label className="block text-slate-600 text-xs font-semibold mb-1.5">اسم المجموعة التعليمية</label>
+                <label className="block text-slate-600 dark:text-slate-350 text-xs font-semibold mb-1.5">اسم المجموعة التعليمية</label>
                 <input 
                   type="text" 
                   value={groupName} 
                   onChange={(e) => setGroupName(e.target.value)} 
                   placeholder="مثال: مجموعة الفيزياء - ثانية ثانوي أ"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-700 text-sm focus:outline-hidden focus:border-indigo-500 transition-colors"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-700 dark:text-slate-200 text-sm focus:outline-hidden focus:border-indigo-500 transition-colors"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-600 text-xs font-semibold mb-1.5">المادة العلمية</label>
+                  <label className="block text-slate-600 dark:text-slate-350 text-xs font-semibold mb-1.5">المادة العلمية</label>
                   <input 
                     type="text" 
                     value={groupSubject} 
                     onChange={(e) => setGroupSubject(e.target.value)} 
                     placeholder="مثال: الفيزياء"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-700 text-xs focus:outline-hidden focus:border-indigo-500"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-slate-700 dark:text-slate-200 text-xs focus:outline-hidden focus:border-indigo-500 transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-600 text-xs font-semibold mb-1.5">قيمة الاشتراك (بالجنيه)</label>
+                  <label className="block text-slate-600 dark:text-slate-350 text-xs font-semibold mb-1.5">قيمة الاشتراك (بالجنيه)</label>
                   <input 
                     type="number" 
                     value={groupPrice} 
                     onChange={(e) => setGroupPrice(Number(e.target.value))} 
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-700 text-xs focus:outline-hidden focus:border-indigo-500"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-slate-700 dark:text-slate-200 text-xs focus:outline-hidden focus:border-indigo-500 transition-colors"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-slate-600 text-xs font-semibold mb-1.5">المعلم المدرس للجروب</label>
+                <label className="block text-slate-600 dark:text-slate-355 text-xs font-semibold mb-1.5">المعلم المدرس للجروب</label>
                 <select 
                   value={linkedTeacherId} 
                   onChange={(e) => {
@@ -543,7 +550,7 @@ export default function GroupsList({
                     const selected = teachers.find(t => t.id === e.target.value);
                     if (selected) setGroupSubject(selected.subject);
                   }}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-700 text-sm focus:outline-hidden focus:border-indigo-500"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-700 dark:text-slate-200 text-sm focus:outline-hidden focus:border-indigo-500 transition-colors"
                 >
                   <option value="">-- اختر المعلم --</option>
                   {teachers.map(t => (
@@ -556,13 +563,13 @@ export default function GroupsList({
               </div>
 
               {/* Flex Multiple Schedules */}
-              <div className="space-y-2 border-t border-slate-50 pt-3">
+              <div className="space-y-2 border-t border-slate-50 dark:border-slate-800 pt-3">
                 <div className="flex justify-between items-center mb-1">
-                  <label className="text-slate-700 text-xs font-bold">مواعيد المحاضرات الأسبوعية</label>
+                  <label className="text-slate-700 dark:text-slate-300 text-xs font-bold">مواعيد المحاضرات الأسبوعية</label>
                   <button 
                     type="button" 
                     onClick={handleAddScheduleRow}
-                    className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-sm flex items-center gap-1 font-bold transition-all"
+                    className="text-xs bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded-sm flex items-center gap-1 font-bold transition-all cursor-pointer"
                   >
                     <Plus className="w-3 h-3" />
                     <span>إضافة موعد</span>
@@ -570,11 +577,11 @@ export default function GroupsList({
                 </div>
 
                 {schedules.map((sched, idx) => (
-                  <div key={idx} className="flex gap-2 items-center bg-slate-50 p-2 rounded-lg">
+                  <div key={idx} className="flex gap-2 items-center bg-slate-50 dark:bg-slate-950 p-2 rounded-lg border border-slate-150/10 dark:border-slate-850/40 transition-colors">
                     <select 
                       value={sched.day} 
                       onChange={(e) => handleScheduleChange(idx, 'day', e.target.value)}
-                      className="bg-white border border-slate-200 rounded-sm p-1.5 text-xs text-slate-600 flex-1 focus:outline-hidden"
+                      className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-1.5 text-xs text-slate-600 dark:text-slate-300 flex-1 focus:outline-hidden transition-colors"
                     >
                       {WEEK_DAYS.map(day => (
                         <option key={day} value={day}>{day}</option>
@@ -585,14 +592,14 @@ export default function GroupsList({
                       type="time" 
                       value={sched.time} 
                       onChange={(e) => handleScheduleChange(idx, 'time', e.target.value)}
-                      className="bg-white border border-slate-200 rounded-sm p-1 text-xs text-slate-600 w-24 text-center focus:outline-hidden"
+                      className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-1 text-xs text-slate-600 dark:text-slate-300 w-24 text-center focus:outline-hidden transition-colors"
                     />
 
                     {schedules.length > 1 && (
                       <button 
                         type="button" 
                         onClick={() => handleRemoveScheduleRow(idx)}
-                        className="text-rose-500 hover:bg-rose-50 p-1.5 rounded-xs"
+                        className="text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-955/20 p-1.5 rounded-sm cursor-pointer transition-colors"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -602,7 +609,7 @@ export default function GroupsList({
               </div>
 
               {groupError && (
-                <div className="p-3 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl text-xs font-semibold leading-relaxed">
+                <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-100 dark:border-rose-900 text-rose-600 dark:text-rose-400 rounded-xl text-xs font-semibold leading-relaxed">
                   {groupError}
                 </div>
               )}
@@ -610,7 +617,7 @@ export default function GroupsList({
               <button 
                 type="submit"
                 disabled={teachers.length === 0}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 mt-2"
+                className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 mt-2 cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>حفظ وإنشاء المجموعة</span>
@@ -621,7 +628,7 @@ export default function GroupsList({
           {/* Right panel: Groups grid list */}
           <div className="lg:col-span-2 space-y-4 animate-fade-in">
             {groups.length === 0 ? (
-              <div className="bg-white p-12 text-center text-slate-400 rounded-2xl border border-slate-100 shadow-xs">
+              <div className="bg-white dark:bg-slate-900 p-12 text-center text-slate-400 dark:text-slate-500 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs transition-colors">
                 لا توجد مجموعات دراسية نشطة حالياً. ابدأ بإنشاء أول مجموعة لتسجيل الطلاب وتوزيع الحصص.
               </div>
             ) : (
@@ -633,11 +640,11 @@ export default function GroupsList({
                     <motion.div 
                       layout
                       key={g.id} 
-                      className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs hover:border-slate-200 transition-all flex flex-col justify-between"
+                      className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs hover:border-slate-200 dark:hover:border-slate-700 transition-all flex flex-col justify-between"
                     >
                       <div>
                         <div className="flex justify-between items-start">
-                          <span className="bg-indigo-50 text-indigo-700 font-extrabold text-xs px-3 py-1 rounded-full">
+                          <span className="bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 font-extrabold text-xs px-3 py-1 rounded-full">
                             {g.subject}
                           </span>
                           
@@ -657,7 +664,7 @@ export default function GroupsList({
                                 onDeleteGroup(g.id);
                               }
                             }}
-                            className="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg hover:bg-slate-50 transition-all"
+                            className="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-850 transition-all cursor-pointer"
                             title="حذف المجموعة"
                           >
                             <Trash2 className="w-4.5 h-4.5" />
@@ -665,34 +672,34 @@ export default function GroupsList({
                         </div>
 
                         <div className="mt-3">
-                          <h4 className="font-bold text-slate-800 text-sm">{g.name}</h4>
-                          <span className="text-slate-500 text-xs block mt-1">
-                            المعلم: <strong className="text-indigo-600">{trainer ? trainer.name : 'غير محدد'}</strong>
+                          <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">{g.name}</h4>
+                          <span className="text-slate-500 dark:text-slate-400 text-xs block mt-1">
+                            المعلم: <strong className="text-indigo-600 dark:text-indigo-400">{trainer ? trainer.name : 'غير محدد'}</strong>
                           </span>
                         </div>
 
                         {/* Schedules tags */}
-                        <div className="mt-4 pt-3 border-t border-slate-50 space-y-1.5">
-                          <p className="text-[10px] text-slate-400 font-bold mb-1">المواعيد الأسبوعية الحالية:</p>
+                        <div className="mt-4 pt-3 border-t border-slate-50 dark:border-slate-800 space-y-1.5">
+                          <p className="text-[10px] text-slate-400 dark:text-slate-550 font-bold mb-1">المواعيد الأسبوعية الحالية:</p>
                           <div className="flex flex-wrap gap-1.5">
                             {g.schedules ? g.schedules.map((s, idx) => (
-                              <span key={idx} className="bg-slate-50 text-slate-600 text-[11px] px-2 py-0.5 rounded-md border border-slate-100 flex items-center gap-1">
+                              <span key={idx} className="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-350 text-[11px] px-2 py-0.5 rounded-md border border-slate-100 dark:border-slate-800 flex items-center gap-1 transition-colors">
                                 <Clock className="w-3 h-3 text-slate-400" />
                                 <span>{s.day} @ {s.time}</span>
                               </span>
                             )) : (
-                              <span className="text-slate-400 text-xs">لا توجد مواعيد مخصصة</span>
+                              <span className="text-slate-400 dark:text-slate-500 text-xs">لا توجد مواعيد مخصصة</span>
                             )}
                           </div>
                         </div>
                       </div>
 
-                      <div className="mt-5 pt-3 border-t border-slate-100 flex justify-between items-center bg-slate-50 -mx-5 -mb-5 p-3 rounded-b-2xl text-xs">
-                        <div className="flex items-center gap-1 text-slate-500">
+                      <div className="mt-5 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-950 -mx-5 -mb-5 p-3 rounded-b-2xl text-xs">
+                        <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
                           <Users className="w-3.5 h-3.5" />
                           <span>الطلاب المسجلين: <strong>{enrolledCount} طالباً</strong></span>
                         </div>
-                        <span className="bg-indigo-100 text-indigo-700 font-extrabold px-2 py-0.5 rounded-md">{g.price} جنيه/شهر</span>
+                        <span className="bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-extrabold px-2 py-0.5 rounded-md">{g.price} جنيه/شهر</span>
                       </div>
                     </motion.div>
                   );

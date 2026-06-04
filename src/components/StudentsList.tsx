@@ -281,10 +281,10 @@ export default function StudentsList({
     <div className="space-y-6 text-right" dir="rtl">
       
       {/* Top Controls / Details */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-xs">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs transition-colors">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">شؤون الطلاب وملفات التعارف</h1>
-          <p className="text-slate-500 text-sm mt-1">إضافة وتعديل الطلاب، وطباعة بطاقات الهوية المشفّرة بـ QR، والتحميل المباشر للتقارير.</p>
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">شؤون الطلاب وملفات التعارف</h1>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">إضافة وتعديل الطلاب، وطباعة بطاقات الهوية المشفّرة بـ QR، والتحميل المباشر للتقارير.</p>
         </div>
         
         {/* Buttons */}
@@ -329,7 +329,7 @@ export default function StudentsList({
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-2xs flex flex-col md:flex-row gap-3 items-center">
+      <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-100 dark:border-slate-800 shadow-2xs flex flex-col md:flex-row gap-3 items-center transition-colors">
         
         {/* Input Search */}
         <div className="relative w-full md:flex-1">
@@ -339,7 +339,7 @@ export default function StudentsList({
             placeholder="ابحث باسم الطالب، الكود الرقمي، أو تليفون ولي الأمر..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl pr-10 pl-4 py-2.5 text-sm text-slate-700 focus:outline-hidden focus:border-indigo-500"
+            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl pr-10 pl-4 py-2.5 text-sm text-slate-705 dark:text-slate-300 focus:outline-hidden focus:border-indigo-500"
           />
         </div>
 
@@ -347,7 +347,7 @@ export default function StudentsList({
         <select 
           value={selectedGroupId}
           onChange={(e) => setSelectedGroupId(e.target.value)}
-          className="w-full md:w-56 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-slate-600 text-sm focus:outline-hidden"
+          className="w-full md:w-56 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-600 dark:text-slate-300 text-sm focus:outline-hidden"
         >
           <option value="">جميع المجموعات</option>
           {groups.map(g => (
@@ -359,7 +359,7 @@ export default function StudentsList({
         <select 
           value={selectedGender}
           onChange={(e) => setSelectedGender(e.target.value as any)}
-          className="w-full md:w-36 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-slate-600 text-sm focus:outline-hidden"
+          className="w-full md:w-36 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-slate-600 dark:text-slate-300 text-sm focus:outline-hidden"
         >
           <option value="all">النوع (الكل)</option>
           <option value="male">ذكور ♂</option>
@@ -370,7 +370,7 @@ export default function StudentsList({
         <select 
           value={selectedStatus}
           onChange={(e) => setSelectedStatus(e.target.value as any)}
-          className="w-full md:w-36 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-slate-600 text-sm focus:outline-hidden"
+          className="w-full md:w-36 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-slate-600 dark:text-slate-300 text-sm focus:outline-hidden"
         >
           <option value="all">كل الحالات</option>
           <option value="active">نشط</option>
@@ -380,7 +380,7 @@ export default function StudentsList({
 
       {/* Student List View Grid */}
       {filteredStudents.length === 0 ? (
-        <div className="bg-white p-16 text-center text-slate-400 rounded-2xl border border-slate-100 shadow-xs">
+        <div className="bg-white dark:bg-slate-900 p-16 text-center text-slate-400 dark:text-slate-500 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs transition-colors">
           لم يتم العثور على أي طلاب يطابقون خيارات البحث والتصفية للسنتر.
         </div>
       ) : (
@@ -393,21 +393,21 @@ export default function StudentsList({
               <motion.div 
                 layout
                 key={s.id} 
-                className="bg-white rounded-2xl border border-slate-100 shadow-xs p-5 hover:border-slate-200 transition-all flex flex-col justify-between"
+                className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs p-5 hover:border-slate-205 dark:hover:border-slate-700 transition-all flex flex-col justify-between"
               >
                 <div>
                   <div className="flex justify-between items-start">
                     <div className="flex gap-2 items-center">
-                      <span className="bg-slate-100 text-slate-600 font-extrabold text-[11px] font-mono px-2 py-0.5 rounded-md">
+                      <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-350 font-extrabold text-[11px] font-mono px-2 py-0.5 rounded-md">
                         #{s.code}
                       </span>
                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                        s.status === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
+                        s.status === 'active' ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400' : 'bg-rose-50 dark:bg-rose-955/40 text-rose-700 dark:text-rose-400'
                       }`}>
                         {s.status === 'active' ? 'نشط' : 'موقف'}
                       </span>
                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                        s.gender === 'female' ? 'bg-purple-50 text-purple-700 border border-purple-100' : 'bg-sky-50 text-sky-700 border border-sky-100'
+                        s.gender === 'female' ? 'bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400 border border-purple-100 dark:border-purple-900/40' : 'bg-sky-50 dark:bg-sky-955/40 text-sky-700 dark:text-sky-450 border border-sky-100 dark:border-sky-900/40'
                       }`}>
                         {s.gender === 'female' ? 'أنثى ♀' : 'ذكر ♂'}
                       </span>
@@ -418,7 +418,7 @@ export default function StudentsList({
                       <button 
                         type="button" 
                         onClick={() => setActiveCardStudent(s)}
-                        className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 p-1.5 rounded-lg transition-all"
+                        className="bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-400 p-1.5 rounded-lg transition-all"
                         title="إنشاء كارت الهوية بـ QR"
                       >
                         <QrCode className="w-4 h-4" />
@@ -426,7 +426,7 @@ export default function StudentsList({
                       <button 
                         type="button" 
                         onClick={() => startEdit(s)}
-                        className="bg-slate-100 hover:bg-slate-200 text-slate-700 p-1.5 rounded-lg transition-all"
+                        className="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 p-1.5 rounded-lg transition-all"
                         title="تعديل البيانات"
                       >
                         📝
@@ -447,7 +447,7 @@ export default function StudentsList({
                             onDeleteStudent(s.id);
                           }
                         }}
-                        className="bg-rose-50 hover:bg-rose-100 text-rose-600 p-1.5 rounded-lg transition-all"
+                        className="bg-rose-50 dark:bg-rose-955/40 hover:bg-rose-100 dark:hover:bg-rose-900 text-rose-600 dark:text-rose-400 p-1.5 rounded-lg transition-all"
                         title="حذف الطالب"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -456,11 +456,11 @@ export default function StudentsList({
                   </div>
 
                   <div className="mt-4">
-                    <h3 className="font-bold text-slate-800 text-base">{s.name}</h3>
+                    <h3 className="font-bold text-slate-805 dark:text-slate-105 text-base">{s.name}</h3>
                     
-                    <div className="mt-3 space-y-1.5 text-slate-500 text-xs">
+                    <div className="mt-3 space-y-1.5 text-slate-500 dark:text-slate-400 text-xs">
                       <p className="flex items-center gap-1.5">
-                        <Phone className="w-3.5 h-3.5 text-slate-400" />
+                        <Phone className="w-3.5 h-3.5 text-slate-400 dark:text-slate-550" />
                         <span>رقم تليفون الطالب: <strong>{s.phone}</strong></span>
                       </p>
                       <p className="flex items-center gap-1.5">
@@ -470,14 +470,14 @@ export default function StudentsList({
                     </div>
 
                     {/* Enrolled groups names */}
-                    <div className="mt-4 pt-3 border-t border-slate-50">
-                      <span className="text-[10px] text-slate-400 font-bold block mb-1">المجموعات الدراسية المسجلة:</span>
+                    <div className="mt-4 pt-3 border-t border-slate-50 dark:border-slate-800">
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold block mb-1">المجموعات الدراسية المسجلة:</span>
                       {studentGroupsObj.length === 0 ? (
-                        <span className="text-slate-400 text-xs italic">غير ملحق بمجموعات حالياً</span>
+                        <span className="text-slate-400 dark:text-slate-500 text-xs italic">غير ملحق بمجموعات حالياً</span>
                       ) : (
                         <div className="flex flex-wrap gap-1">
                           {studentGroupsObj.map(g => (
-                            <span key={g.id} className="bg-indigo-50 text-indigo-700 text-[10px] px-2 py-0.5 rounded-md">
+                            <span key={g.id} className="bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-400 text-[10px] px-2 py-0.5 rounded-md">
                               {g.name}
                             </span>
                           ))}
@@ -488,17 +488,17 @@ export default function StudentsList({
                 </div>
 
                 {/* Balance & Financial liability details */}
-                <div className="mt-5 pt-3 border-t border-slate-100 flex justify-between items-center bg-slate-50 -mx-5 -mb-5 p-3 rounded-b-2xl">
-                  <div className="flex items-center gap-1 text-slate-500 text-xs">
-                    <CreditCard className="w-3.5 h-3.5 text-slate-400" />
+                <div className="mt-5 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-950/50 -mx-5 -mb-5 p-3 rounded-b-2xl">
+                  <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400 text-xs">
+                    <CreditCard className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                     <span>الرصيد/الحساب الفردي</span>
                   </div>
                   <span className={`text-sm font-extrabold px-3 py-0.5 rounded-md ${
                     s.balance < 0 
-                      ? 'bg-rose-100 text-rose-700' 
+                      ? 'bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400' 
                       : s.balance > 0 
-                        ? 'bg-emerald-100 text-emerald-700' 
-                        : 'bg-slate-200 text-slate-700'
+                        ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400' 
+                        : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-350'
                   }`}>
                     {s.balance === 0 ? 'مستوفي' : s.balance > 0 ? `+${s.balance} جنيه` : `${s.balance} جنيه`}
                   </span>
@@ -512,83 +512,83 @@ export default function StudentsList({
       {/* Dialog / Registration overlay Modal */}
       <AnimatePresence>
         {isFormOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 overflow-y-auto">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
             <motion.div 
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-2xl border border-slate-200 max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto shadow-xl"
+               initial={{ scale: 0.95, opacity: 0 }}
+               animate={{ scale: 1, opacity: 1 }}
+               exit={{ scale: 0.95, opacity: 0 }}
+               className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-205 dark:border-slate-800 max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto shadow-xl transition-colors"
             >
-              <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-                <h3 className="text-lg font-bold text-slate-800">
+              <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
+                <h3 className="text-lg font-bold text-slate-805 dark:text-slate-100">
                   {editingStudentId ? 'تعديل ملف الطالب' : 'تسجيل نموذج طالب جديد'}
                 </h3>
                 <button 
                   type="button" 
                   onClick={() => setIsFormOpen(false)}
-                  className="bg-slate-150 p-1.5 rounded-lg hover:bg-slate-250 transition-all text-slate-400 hover:text-slate-700"
+                  className="bg-slate-150 dark:bg-slate-800 p-1.5 rounded-lg text-slate-400 hover:text-slate-705 dark:hover:text-slate-300 transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4 text-slate-700">
+              <form onSubmit={handleSubmit} className="space-y-4 text-slate-700 dark:text-slate-300">
                 <div>
-                  <label className="block text-slate-600 text-xs font-semibold mb-1.5">اسم الطالب بالكامل</label>
+                  <label className="block text-slate-600 dark:text-slate-400 text-xs font-semibold mb-1.5">اسم الطالب بالكامل</label>
                   <input 
                     type="text" 
                     value={studentName}
                     onChange={(e) => setStudentName(e.target.value)}
                     placeholder="مثال: أحمد عبد الله محمد"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-800 dark:text-slate-200"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-slate-600 text-xs font-semibold mb-1.5">رقم تليفون الطالب</label>
+                    <label className="block text-slate-600 dark:text-slate-400 text-xs font-semibold mb-1.5">رقم تليفون الطالب</label>
                     <input 
                       type="tel" 
                       value={studentPhone}
                       onChange={(e) => setStudentPhone(e.target.value)}
                       placeholder="01012345678"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"
+                      className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-200"
                     />
                   </div>
                   <div>
-                    <label className="block text-slate-600 text-xs font-semibold mb-1.5">رقم تليفون ولي الأمر</label>
+                    <label className="block text-slate-600 dark:text-slate-400 text-xs font-semibold mb-1.5">رقم تليفون ولي الأمر</label>
                     <input 
                       type="tel" 
                       value={parentPhone}
                       onChange={(e) => setParentPhone(e.target.value)}
                       placeholder="01112223344"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-200"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-slate-600 text-xs font-semibold mb-1.5">النوع (الجنس)</label>
-                  <div className="flex gap-4 bg-slate-50 p-3 rounded-xl border border-slate-150">
-                    <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-700 font-bold">
+                  <label className="block text-slate-600 dark:text-slate-400 text-xs font-semibold mb-1.5">النوع (الجنْس)</label>
+                  <div className="flex gap-4 bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-150 dark:border-slate-800">
+                    <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-700 dark:text-slate-300 font-bold">
                       <input 
                         type="radio" 
                         name="studentGender" 
                         value="male"
                         checked={studentGender === 'male'}
                         onChange={() => setStudentGender('male')}
-                        className="w-4 h-4 text-indigo-600 border-slate-300 focus:ring-indigo-500"
+                        className="w-4 h-4 text-indigo-600 border-slate-300 focus:ring-indigo-505"
                       />
                       <span>ذكر ♂</span>
                     </label>
-                    <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-700 font-bold">
+                    <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-700 dark:text-slate-300 font-bold">
                       <input 
                         type="radio" 
                         name="studentGender" 
                         value="female"
                         checked={studentGender === 'female'}
                         onChange={() => setStudentGender('female')}
-                        className="w-4 h-4 text-indigo-600 border-slate-300 focus:ring-indigo-500"
+                        className="w-4 h-4 text-indigo-600 border-slate-300 focus:ring-indigo-505"
                       />
                       <span>أنثى ♀</span>
                     </label>
@@ -599,16 +599,16 @@ export default function StudentsList({
                 <div>
                   <label className="block text-slate-600 text-xs font-semibold mb-1.5">ربط المجموعات الدراسية</label>
                   {groups.length === 0 ? (
-                    <p className="text-xs text-amber-600">لا تتوفر مجموعات بالسنتر لربطها. يرجى إنشاء مجموعات أولاً.</p>
+                    <p className="text-xs text-amber-600 dark:text-amber-400">لا تتوفر مجموعات بالسنتر لربطها. يرجى إنشاء مجموعات أولاً.</p>
                   ) : (
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 max-h-36 overflow-y-auto space-y-2">
+                    <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-200 dark:border-slate-800 max-h-36 overflow-y-auto space-y-2 selection:bg-indigo-500/30">
                       {groups.map(g => (
-                        <label key={g.id} className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-600">
+                        <label key={g.id} className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-650 dark:text-slate-300">
                           <input 
                             type="checkbox" 
                             checked={selectedGroups.includes(g.id)}
                             onChange={() => handleGroupCheckboxChange(g.id)}
-                            className="w-4 h-4 rounded-sm border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                            className="w-4 h-4 rounded-sm border-slate-350 text-indigo-600 focus:ring-indigo-500"
                           />
                           <span>{g.name} - (قيمة: {g.price} جنيه)</span>
                         </label>
@@ -619,15 +619,15 @@ export default function StudentsList({
 
                 {!editingStudentId && (
                   <div>
-                    <label className="block text-slate-600 text-xs font-semibold mb-1.5">الرصيد المالي المبدئي (اختياري)</label>
+                    <label className="block text-slate-600 dark:text-slate-400 text-xs font-semibold mb-1.5">الرصيد المالي المبدئي (اختياري)</label>
                     <input 
                       type="number" 
                       value={studentBalance}
                       onChange={(e) => setStudentBalance(Number(e.target.value))}
                       placeholder="استخدم قيمة سلبية مثل (150-) لترسيم مديونية أولية"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm"
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-sm text-slate-800 dark:text-slate-200"
                     />
-                    <p className="text-[10px] text-slate-400 mt-1">القيمة الإيجابية تعني مدفوع مقدماً، والقيمة السلبية تعني مديونية متأخرة.</p>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-550 mt-1">القيمة الإيجابية تعني مدفوع مقدماً، والقيمة السلبية تعني مديونية متأخرة.</p>
                   </div>
                 )}
 
@@ -652,24 +652,24 @@ export default function StudentsList({
       {/* Student ID ID Card View Modal */}
       <AnimatePresence>
         {activeCardStudent && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 overflow-y-auto">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
             <motion.div 
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-2xl border border-slate-200 max-w-sm w-full p-6 space-y-6 shadow-2xl relative"
+              className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 max-w-sm w-full p-6 space-y-6 shadow-2xl relative transition-colors"
             >
               <button 
                 type="button" 
                 onClick={() => setActiveCardStudent(null)}
-                className="absolute top-4 left-4 bg-slate-100 p-1.5 rounded-lg text-slate-400 hover:text-slate-700 transition"
+                className="absolute top-4 left-4 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition"
               >
                 <X className="w-5 h-5" />
               </button>
 
               <div className="text-center pt-2">
-                <h3 className="font-bold text-slate-800 text-lg">بِطاقة هُوية التعارف الحية</h3>
-                <p className="text-slate-400 text-xs">مسح الكارت ضوئياً لتحضير الطالب تلقائياً.</p>
+                <h3 className="font-bold text-slate-800 dark:text-slate-100 text-lg">بِطاقة هُوية التعارف الحية</h3>
+                <p className="text-slate-400 dark:text-slate-500 text-xs">مسح الكارت ضوئياً لتحضير الطالب تلقائياً.</p>
               </div>
 
               {/* ID CARD LAYOUT PREVIEW */}
