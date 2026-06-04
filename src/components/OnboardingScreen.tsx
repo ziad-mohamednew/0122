@@ -17,6 +17,8 @@ export default function OnboardingScreen({ onSave, initialSettings, onClose }: O
   const [autoBackupEnabled, setAutoBackupEnabled] = useState(initialSettings?.autoBackupEnabled ?? true);
   const [logoUrl, setLogoUrl] = useState(initialSettings?.logoUrl || '');
   const [password, setPassword] = useState(initialSettings?.password || '');
+  const [whatsappInstanceId, setWhatsappInstanceId] = useState(initialSettings?.whatsappInstanceId || '');
+  const [whatsappToken, setWhatsappToken] = useState(initialSettings?.whatsappToken || '');
   const [error, setError] = useState('');
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -62,7 +64,9 @@ export default function OnboardingScreen({ onSave, initialSettings, onClose }: O
       backupDirectoryName: backupDirectoryName || "📁 مجلد التنزيلات التلقائي للسنتر (تحميل تلقائي)",
       autoBackupEnabled,
       logoUrl,
-      password: password.trim()
+      password: password.trim(),
+      whatsappInstanceId: whatsappInstanceId.trim(),
+      whatsappToken: whatsappToken.trim()
     });
   };
 
@@ -226,6 +230,42 @@ export default function OnboardingScreen({ onSave, initialSettings, onClose }: O
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full bg-slate-950/80 border border-slate-800 text-white rounded-xl pr-10 pl-4 py-3 text-xs font-bold placeholder-slate-500 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition text-right"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* WhatsApp Gateway Integration (UltraMsg) */}
+          <div className="bg-slate-950/50 p-4 rounded-xl border border-slate-800 space-y-3">
+            <h4 className="text-xs font-bold text-indigo-455 border-b border-slate-800 pb-2 flex items-center gap-1.5">
+              <span>💬 إعدادات بوابة واتساب (UltraMsg) - خاص بالإدارة فقط</span>
+            </h4>
+            <p className="text-[10px] text-slate-450 leading-relaxed">
+              تقوم هذه البوابة بإرسال إشعارات غياب وحضور الطلاب لأولياء الأمور تلقائياً في الخلفية. يتم تشفير الأكواد وحفظها محلياً سحابياً بشكل كامل.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-slate-400 text-[10px] font-bold mb-1">
+                  معرف المثيل (Instance ID)
+                </label>
+                <input
+                  type="text"
+                  placeholder="مثال: instance1234"
+                  value={whatsappInstanceId}
+                  onChange={(e) => setWhatsappInstanceId(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-800 text-white rounded-lg px-3 py-2 text-[11px] font-mono font-bold focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600"
+                />
+              </div>
+              <div>
+                <label className="block text-slate-400 text-[10px] font-bold mb-1">
+                  مفتاح المرور الشخصي (Token)
+                </label>
+                <input
+                  type="password"
+                  placeholder="أدخل الـ Token السري للخدمة"
+                  value={whatsappToken}
+                  onChange={(e) => setWhatsappToken(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-800 text-white rounded-lg px-3 py-2 text-[11px] font-mono focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600"
                 />
               </div>
             </div>

@@ -12,7 +12,8 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, 'preload.cjs')
+      preload: path.join(__dirname, 'preload.cjs'),
+      webSecurity: false // Disable CORS restrictions fully inside packaged desktop client
     },
     // Custom window design
     title: "بوابة السنتر التعليمي الذكية",

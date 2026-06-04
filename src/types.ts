@@ -74,6 +74,8 @@ export interface CenterSettings {
   autoBackupEnabled?: boolean; // Toggle auto backup
   logoUrl?: string; // Base64 data URL for optional center logo
   password?: string; // Optional login/PIN lock password
+  whatsappInstanceId?: string; // UltraMsg Instance ID
+  whatsappToken?: string; // UltraMsg Instance Token
 }
 
 export interface Secretary {

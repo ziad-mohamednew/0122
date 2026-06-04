@@ -48,6 +48,7 @@ import OnboardingScreen from './components/OnboardingScreen';
 import ConfirmationModal from './components/ConfirmationModal';
 import SecretariesList from './components/SecretariesList';
 import FinancialReports from './components/FinancialReports';
+import WhatsAppLogs from './components/WhatsAppLogs';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -197,6 +198,7 @@ export default function App() {
         (activeTab === 'groups' && currentSecretary.permissions?.groups) ||
         (activeTab === 'payments' && currentSecretary.permissions?.payments) ||
         (activeTab === 'attendance' && currentSecretary.permissions?.attendance) ||
+        (activeTab === 'whatsapp_logs' && currentSecretary.permissions?.logs) ||
         (activeTab === 'audit' && currentSecretary.permissions?.logs);
       
       if (!allowed) {
@@ -507,6 +509,165 @@ export default function App() {
     }, `حذف وإلغاء مستند صرف مالي من السجلات`, 'system');
   };
 
+  // Unified WhatsApp dispatch helper that works seamlessly inside both Web and packaged Electron (EXE) environment
+  const dispatchWhatsAppMessageDirect = async (params: {
+    studentName: string;
+    gradeName: string;
+    absenceDate: string;
+    parentPhone: string;
+    centerName: string;
+    teacherName?: string | null;
+  }): Promise<{ success: boolean; sent: boolean; messageText: string; error?: string; id?: string }> => {
+    const { studentName, gradeName, absenceDate, parentPhone, centerName, teacherName } = params;
+    
+    // Format localized Cairo time
+    const recordingTime = new Date().toLocaleTimeString('ar-EG', {
+      timeZone: 'Africa/Cairo',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+
+    const tName = teacherName ? `\nالمدرس: ${teacherName}` : "";
+    const messageText = `السلام عليكم ورحمة الله وبركاته
+
+نحيط سيادتكم علماً بأن الطالب:
+${studentName}
+
+قد تم تسجيل غيابه اليوم:
+${absenceDate} (في تمام الساعة: ${recordingTime})
+
+الصف:
+${gradeName}${tName}
+
+يرجى التواصل مع إدارة سنتر ${centerName} لمعرفة التفاصيل.
+
+مع تحيات إدارة سنتر ${centerName}.`;
+
+    const cleanPhone = parentPhone.replace(/[\s\-\+\(\)]/g, "");
+    let formattedPhone = cleanPhone;
+    if (cleanPhone.startsWith("01")) {
+      formattedPhone = "2" + cleanPhone;
+    } else if (cleanPhone.startsWith("1")) {
+      formattedPhone = "20" + cleanPhone;
+    }
+
+    const isPhoneValid = /^\d{10,15}$/.test(formattedPhone);
+    if (!isPhoneValid) {
+      return {
+        success: false,
+        sent: false,
+        messageText,
+        error: `رقم الهاتف المستهدف غير مطابق للصيغة الدولية الصحيحة: ${parentPhone}`
+      };
+    }
+
+    const instanceId = state.centerSettings?.whatsappInstanceId;
+    const token = state.centerSettings?.whatsappToken;
+
+    // Direct client-side UltraMsg call if credentials exist (guarantees operation inside packaged Electron EXE files)
+    if (instanceId && token) {
+      try {
+        const url = `https://api.ultramsg.com/${instanceId}/messages/chat`;
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            token,
+            to: formattedPhone,
+            body: messageText
+          })
+        });
+
+        const bodyText = await response.text();
+        if (!response.ok) {
+          return {
+            success: false,
+            sent: false,
+            messageText,
+            error: `فشل استجابة UltraMsg: ${bodyText}`
+          };
+        }
+
+        let result;
+        try {
+          result = JSON.parse(bodyText);
+        } catch {
+          result = { raw: bodyText };
+        }
+
+        if (result.sent === "true" || result.id || (result.success && result.success !== false)) {
+          return {
+            success: true,
+            sent: true,
+            id: result.id || String(Date.now()),
+            messageText
+          };
+        } else {
+          return {
+            success: false,
+            sent: false,
+            messageText,
+            error: result.error || "فشل غير معروف من سرفرات إرسال UltraMsg."
+          };
+        }
+      } catch (err: any) {
+        return {
+          success: false,
+          sent: false,
+          messageText,
+          error: `خطأ اتصال مباشر بـ UltraMsg: ${err.message || err}`
+        };
+      }
+    }
+
+    // Fallback to Express backend proxy router if running on local development web environment
+    try {
+      const response = await fetch("/api/whatsapp/send-absence", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          studentName,
+          gradeName,
+          absenceDate,
+          parentPhone,
+          centerName,
+          teacherName
+        })
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        return {
+          success: false,
+          sent: false,
+          messageText,
+          error: `فشل السيرفر الإرسال الخلفي: ${text}`
+        };
+      }
+
+      const resData = await response.json();
+      return {
+        success: resData.sent || resData.success || false,
+        sent: resData.sent || resData.success || false,
+        id: resData.id,
+        messageText,
+        error: resData.sent ? undefined : (resData.error || "فشل غير معروف من البوابة")
+      };
+    } catch (err: any) {
+      return {
+        success: false,
+        sent: false,
+        messageText,
+        error: `تعطل كل مسارات الاتصال بالبوابة (يرجى مراجعة إعدادات الإنترنت): ${err.message || err}`
+      };
+    }
+  };
+
   // Record/Update session attendance check list
   const handleSaveAttendance = async (record: AttendanceRecord) => {
     const existsIdx = state.attendance.findIndex(a => a.id === record.id);
@@ -546,22 +707,14 @@ export default function App() {
         if (student) {
           const uniqueId = `wa-log-${Date.now()}-${studentId}`;
           try {
-            const response = await fetch("/api/whatsapp/send-absence", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json"
-              },
-              body: JSON.stringify({
-                studentName: student.name,
-                gradeName: groupName,
-                absenceDate: record.date,
-                parentPhone: student.parentPhone,
-                centerName,
-                teacherName
-              })
+            const resData = await dispatchWhatsAppMessageDirect({
+              studentName: student.name,
+              gradeName: groupName,
+              absenceDate: record.date,
+              parentPhone: student.parentPhone,
+              centerName,
+              teacherName
             });
-
-            const resData = await response.json();
 
             const newLog: WhatsAppLog = {
               id: uniqueId,
@@ -571,7 +724,7 @@ export default function App() {
               message: resData.messageText || `السلام عليكم ورحمة الله وبركاته...`,
               timestamp: new Date().toISOString(),
               status: resData.sent ? 'success' : 'failed',
-              errorReason: resData.sent ? undefined : (resData.error || "فشل غير معروف من الخادم"),
+              errorReason: resData.sent ? undefined : (resData.error || "فشل غير معروف من سرفرات إرسال البث"),
               attendanceRecordId: attendanceRecordId
             };
             newLogsToInculcate.push(newLog);
@@ -610,7 +763,7 @@ export default function App() {
   };
 
   // Re-send WhatsApp message manually from administration logs panel
-  const handleResendWhatsAppMessage = async (log: WhatsAppLog) => {
+  const handleResendWhatsAppMessage = async (log: WhatsAppLog): Promise<{ success: boolean; error?: string }> => {
     const student = state.students.find(s => s.id === log.studentId);
     let groupName = "مجموعة السنتر";
     let teacherName = "مدرس المادة";
@@ -627,22 +780,14 @@ export default function App() {
     const centerName = state.centerSettings?.name || 'السنتر التعليمي';
 
     try {
-      const response = await fetch("/api/whatsapp/send-absence", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          studentName: log.studentName,
-          gradeName: groupName,
-          absenceDate: new Date().toISOString().split('T')[0],
-          parentPhone: log.parentPhone,
-          centerName,
-          teacherName
-        })
+      const resData = await dispatchWhatsAppMessageDirect({
+        studentName: log.studentName,
+        gradeName: groupName,
+        absenceDate: new Date().toISOString().split('T')[0],
+        parentPhone: log.parentPhone,
+        centerName,
+        teacherName
       });
-
-      const resData = await response.json();
 
       const newLog: WhatsAppLog = {
         id: `wa-log-${Date.now()}-${log.studentId}`,
@@ -652,7 +797,7 @@ export default function App() {
         message: resData.messageText || log.message,
         timestamp: new Date().toISOString(),
         status: resData.sent ? 'success' : 'failed',
-        errorReason: resData.sent ? undefined : (resData.error || "فشل غير معروف من الخادم"),
+        errorReason: resData.sent ? undefined : (resData.error || "فشل غير معروف من سرفرات الإرسال المباشرة"),
         attendanceRecordId: log.attendanceRecordId
       };
 
@@ -661,6 +806,11 @@ export default function App() {
         ...state,
         whatsAppLogs: refreshed
       }, `إعادة إرسال رسالة غياب الطالب: ${log.studentName} يدوياً عبر واتساب`, 'attendance');
+
+      return {
+        success: resData.sent,
+        error: resData.sent ? undefined : (resData.error || "فشل إرسال البث")
+      };
 
     } catch (err: any) {
       console.error("Manual resend failed", err);
@@ -681,6 +831,203 @@ export default function App() {
         ...state,
         whatsAppLogs: refreshed
       }, `فشل إعادة إرسال رسالة غياب الطالب: ${log.studentName} يدوياً عبر واتساب`, 'attendance');
+
+      return {
+        success: false,
+        error: err.message || "فشل الاتصال"
+      };
+    }
+  };
+
+  // Clear all WhatsApp logs from persistent state database
+  const handleClearWhatsAppLogs = async () => {
+    showConfirm({
+      title: "🗑️ هل أنت متأكد من مسح وتفريغ سجل إشعارات واتساب بالكامل؟",
+      message: "لا يمكن التراجع عن هذه الخطوة وسيتم تصفير جدول المراقبة كلياً مع الإبقاء على الفواتير والدروس.",
+      type: "danger",
+      onConfirm: async () => {
+        await handleStateChange({
+          ...state,
+          whatsAppLogs: []
+        }, "تفريغ وتصفير سجل إرسال واتساب بالكامل", "system");
+      }
+    });
+  };
+
+  // Direct manual WhatsApp sender/tester that handles both client-side direct and server-side fallback modes
+  const handleSendDirectTest = async (phone: string, text: string): Promise<{ success: boolean; error?: string; id?: string }> => {
+    const instanceId = state.centerSettings?.whatsappInstanceId;
+    const token = state.centerSettings?.whatsappToken;
+
+    const cleanPhone = phone.replace(/[\s\-\+\(\)]/g, "");
+    let formattedPhone = cleanPhone;
+    if (cleanPhone.startsWith("01")) {
+      formattedPhone = "2" + cleanPhone;
+    } else if (cleanPhone.startsWith("1")) {
+      formattedPhone = "20" + cleanPhone;
+    }
+
+    const isPhoneValid = /^\d{10,15}$/.test(formattedPhone);
+    if (!isPhoneValid) {
+      return {
+        success: false,
+        error: `رقم الهاتف غير مطابق للصيغة الدولية الصحيحة: ${phone}`
+      };
+    }
+
+    if (instanceId && token) {
+      try {
+        const url = `https://api.ultramsg.com/${instanceId}/messages/chat`;
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            token,
+            to: formattedPhone,
+            body: text
+          })
+        });
+
+        const bodyText = await response.text();
+        if (!response.ok) {
+          return {
+            success: false,
+            error: `فشل استجابة UltraMsg: ${bodyText}`
+          };
+        }
+
+        let result;
+        try {
+          result = JSON.parse(bodyText);
+        } catch {
+          result = { raw: bodyText };
+        }
+
+        if (result.sent === "true" || result.id || (result.success && result.success !== false)) {
+          const newTestLog: WhatsAppLog = {
+            id: `wa-test-${Date.now()}`,
+            studentId: 'test-student',
+            studentName: 'رسالة فحص تجريبية',
+            parentPhone: phone,
+            message: text,
+            timestamp: new Date().toISOString(),
+            status: 'success'
+          };
+          
+          await handleStateChange({
+            ...state,
+            whatsAppLogs: [newTestLog, ...(state.whatsAppLogs || [])]
+          }, `إرسال رسالة واتساب تجريبية للرقم: ${phone}`, 'system');
+
+          return {
+            success: true,
+            id: result.id || String(Date.now())
+          };
+        } else {
+          const errMsg = result.error || "فشل غير معروف من سرفرات إرسال UltraMsg.";
+          const newFailedLog: WhatsAppLog = {
+            id: `wa-test-${Date.now()}`,
+            studentId: 'test-student',
+            studentName: 'رسالة فحص تجريبية',
+            parentPhone: phone,
+            message: text,
+            timestamp: new Date().toISOString(),
+            status: 'failed',
+            errorReason: errMsg
+          };
+
+          await handleStateChange({
+            ...state,
+            whatsAppLogs: [newFailedLog, ...(state.whatsAppLogs || [])]
+          }, `فشل إرسال رسالة واتساب تجريبية للرقم: ${phone}`, 'system');
+
+          return {
+            success: false,
+            error: errMsg
+          };
+        }
+      } catch (err: any) {
+        return {
+          success: false,
+          error: `عطل شبكي في التوصيل لـ UltraMsg: ${err.message || err}`
+        };
+      }
+    }
+
+    // Fallback to local server proxy in dev environments
+    try {
+      const response = await fetch("/api/whatsapp/send-absence", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          studentName: "رسالة فحص تجريبية",
+          gradeName: "الصف التدريبي",
+          absenceDate: new Date().toISOString().split('T')[0],
+          parentPhone: phone,
+          centerName: state.centerSettings?.name || "السنتر التعليمي",
+          teacherName: "الأستاذ المشرف"
+        })
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        return {
+          success: false,
+          error: `خطأ في استجابة بوابة السيرفر المحلية: ${text}`
+        };
+      }
+
+      const resData = await response.json();
+      if (resData.sent || resData.success) {
+        const newTestLog: WhatsAppLog = {
+          id: `wa-test-${Date.now()}`,
+          studentId: 'test-student',
+          studentName: 'رسالة فحص تجريبية (عبر السيرفر)',
+          parentPhone: phone,
+          message: text,
+          timestamp: new Date().toISOString(),
+          status: 'success'
+        };
+        await handleStateChange({
+          ...state,
+          whatsAppLogs: [newTestLog, ...(state.whatsAppLogs || [])]
+        }, `إرسال رسالة اختبارية للرقم: ${phone}`, 'system');
+
+        return {
+          success: true,
+          id: resData.id
+        };
+      } else {
+        const errMsg = resData.error || "فشل التمرير من السيرفر المحلي.";
+        const newFailedLog: WhatsAppLog = {
+          id: `wa-test-${Date.now()}`,
+          studentId: 'test-student',
+          studentName: 'رسالة فحص تجريبية (عبر السيرفر)',
+          parentPhone: phone,
+          message: text,
+          timestamp: new Date().toISOString(),
+          status: 'failed',
+          errorReason: errMsg
+        };
+        await handleStateChange({
+          ...state,
+          whatsAppLogs: [newFailedLog, ...(state.whatsAppLogs || [])]
+        }, `فشل إرسال رسالة اختبارية للرقم: ${phone}`, 'system');
+
+        return {
+          success: false,
+          error: errMsg
+        };
+      }
+    } catch (err: any) {
+      return {
+        success: false,
+        error: `خطأ اتصال: ${err.message || err}`
+      };
     }
   };
 
@@ -774,6 +1121,7 @@ export default function App() {
     (!currentSecretary || currentSecretary.permissions?.payments) && { id: 'payments', label: 'الحسابات والفوترة', icon: DollarSign },
     (!currentSecretary || currentSecretary.permissions?.payments) && { id: 'financials', label: 'كشف الحسابات', icon: Calculator },
     (!currentSecretary || currentSecretary.permissions?.attendance) && { id: 'attendance', label: 'الحضور والغياب (QR)', icon: UserCheck },
+    (!currentSecretary || currentSecretary.permissions?.logs) && { id: 'whatsapp_logs', label: 'بوابة وسجلات واتساب', icon: MessageSquare },
     (!currentSecretary) && { id: 'secretaries', label: 'إدارة السكرتارية', icon: UserCog },
     (!currentSecretary || currentSecretary.permissions?.logs) && { id: 'audit', label: 'النسخ والأمن', icon: ShieldAlert },
   ].filter(Boolean) as { id: string; label: string; icon: any }[];
@@ -1349,6 +1697,16 @@ export default function App() {
                 showConfirm={showConfirm}
                 adminPassword={state.centerSettings?.password || ''}
                 onLogAction={(msg, cat) => handleStateChange({ ...state }, msg, cat)}
+              />
+            )}
+
+            {activeTab === 'whatsapp_logs' && (
+              <WhatsAppLogs 
+                whatsAppLogs={state.whatsAppLogs || []}
+                centerSettings={state.centerSettings}
+                onResendMessage={handleResendWhatsAppMessage}
+                onClearLogs={handleClearWhatsAppLogs}
+                onSendDirectTest={handleSendDirectTest}
               />
             )}
 

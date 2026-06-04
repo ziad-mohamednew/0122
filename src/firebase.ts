@@ -199,7 +199,9 @@ export function sanitizeData(data: any): AppData {
       backupDirectoryName: data.centerSettings.backupDirectoryName ? String(data.centerSettings.backupDirectoryName) : undefined,
       autoBackupEnabled: data.centerSettings.autoBackupEnabled !== undefined ? Boolean(data.centerSettings.autoBackupEnabled) : undefined,
       logoUrl: data.centerSettings.logoUrl ? String(data.centerSettings.logoUrl) : undefined,
-      password: data.centerSettings.password ? String(data.centerSettings.password) : undefined
+      password: data.centerSettings.password ? String(data.centerSettings.password) : undefined,
+      whatsappInstanceId: data.centerSettings.whatsappInstanceId ? String(data.centerSettings.whatsappInstanceId) : undefined,
+      whatsappToken: data.centerSettings.whatsappToken ? String(data.centerSettings.whatsappToken) : undefined
     } : undefined
   };
 
