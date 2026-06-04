@@ -106,6 +106,18 @@ export interface Expense {
   operatorName?: string;
 }
 
+export interface WhatsAppLog {
+  id: string;
+  studentId: string;
+  studentName: string;
+  parentPhone: string;
+  message: string;
+  timestamp: string;
+  status: 'success' | 'failed';
+  errorReason?: string;
+  attendanceRecordId?: string; // to track duplicate prevention
+}
+
 export interface AppData {
   students: Student[];
   teachers: Teacher[];
@@ -116,4 +128,5 @@ export interface AppData {
   secretaries?: Secretary[];
   centerSettings?: CenterSettings;
   expenses?: Expense[];
+  whatsAppLogs?: WhatsAppLog[];
 }

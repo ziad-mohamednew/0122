@@ -25,11 +25,12 @@ import {
   LogOut,
   Loader2,
   UserCog,
-  Calculator
+  Calculator,
+  MessageSquare
 } from 'lucide-react';
 
 // Import Types
-import { Student, Teacher, Group, Payment, AttendanceRecord, AuditLog, AppData, CenterSettings, Secretary, Expense } from './types';
+import { Student, Teacher, Group, Payment, AttendanceRecord, AuditLog, AppData, CenterSettings, Secretary, Expense, WhatsAppLog } from './types';
 
 // Import Firebase API Synchronizer
 import { getLocalData, saveAppData, setupFirebaseListener, isFirebaseSyncing, testFirebaseConnection } from './firebase';
@@ -45,6 +46,7 @@ import OnboardingScreen from './components/OnboardingScreen';
 import ConfirmationModal from './components/ConfirmationModal';
 import SecretariesList from './components/SecretariesList';
 import FinancialReports from './components/FinancialReports';
+import WhatsAppLogs from './components/WhatsAppLogs';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -165,6 +167,7 @@ export default function App() {
         (activeTab === 'groups' && currentSecretary.permissions?.groups) ||
         (activeTab === 'payments' && currentSecretary.permissions?.payments) ||
         (activeTab === 'attendance' && currentSecretary.permissions?.attendance) ||
+        (activeTab === 'whatsapp_logs' && currentSecretary.permissions?.attendance) ||
         (activeTab === 'audit' && currentSecretary.permissions?.logs);
       
       if (!allowed) {
@@ -476,7 +479,7 @@ export default function App() {
   };
 
   // Record/Update session attendance check list
-  const handleSaveAttendance = (record: AttendanceRecord) => {
+  const handleSaveAttendance = async (record: AttendanceRecord) => {
     const existsIdx = state.attendance.findIndex(a => a.id === record.id);
     let updatedList = [...state.attendance];
     
@@ -487,11 +490,156 @@ export default function App() {
     }
 
     const group = state.groups.find(g => g.id === record.groupId);
+    const groupName = group ? group.name : 'مجموعة عامة';
 
-    handleStateChange({
+    let nextState = {
       ...state,
       attendance: updatedList
-    }, `تحديث دفتر الحضور والغياب ليوم ${record.date} لمجموعة: ${group ? group.name : 'مجموعة عامة'}`, 'attendance');
+    };
+
+    // Auto WhatsApp notifications for student absences logic: discover who's newly absent and hasn't been logged yet
+    const currentLogs = state.whatsAppLogs || [];
+    const absentStudentIds = Object.keys(record.records || {}).filter(
+      studentId => record.records[studentId] === 'absent'
+    );
+
+    const newLogsToInculcate: WhatsAppLog[] = [];
+
+    for (const studentId of absentStudentIds) {
+      const attendanceRecordId = `${studentId}_${record.groupId}_${record.date}`;
+      const alreadySent = currentLogs.some(log => log.attendanceRecordId === attendanceRecordId);
+      
+      if (!alreadySent) {
+        const student = state.students.find(s => s.id === studentId);
+        if (student) {
+          const uniqueId = `wa-log-${Date.now()}-${studentId}`;
+          try {
+            const response = await fetch("/api/whatsapp/send-absence", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                studentName: student.name,
+                gradeName: groupName,
+                absenceDate: record.date,
+                parentPhone: student.parentPhone
+              })
+            });
+
+            const resData = await response.json();
+
+            const newLog: WhatsAppLog = {
+              id: uniqueId,
+              studentId: student.id,
+              studentName: student.name,
+              parentPhone: student.parentPhone,
+              message: resData.messageText || `السلام عليكم ورحمة الله وبركاته...`,
+              timestamp: new Date().toISOString(),
+              status: resData.sent ? 'success' : 'failed',
+              errorReason: resData.sent ? undefined : (resData.error || "فشل غير معروف من الخادم"),
+              attendanceRecordId: attendanceRecordId
+            };
+            newLogsToInculcate.push(newLog);
+
+          } catch (err: any) {
+            console.error("Auto WhatsApp dispatch failed for student", student.name, err);
+            const errorLog: WhatsAppLog = {
+              id: uniqueId,
+              studentId: student.id,
+              studentName: student.name,
+              parentPhone: student.parentPhone,
+              message: `نحيط سيادتكم علماً بأن الطالب: ${student.name} غائب اليوم ${record.date}...`,
+              timestamp: new Date().toISOString(),
+              status: 'failed',
+              errorReason: err.message || "فشل الاتصال بالخادم الرئيسي",
+              attendanceRecordId: attendanceRecordId
+            };
+            newLogsToInculcate.push(errorLog);
+          }
+        }
+      }
+    }
+
+    if (newLogsToInculcate.length > 0) {
+      nextState = {
+        ...nextState,
+        whatsAppLogs: [...newLogsToInculcate, ...currentLogs]
+      };
+    }
+
+    await handleStateChange(
+      nextState,
+      `تحديث دفتر الحضور والغياب ليوم ${record.date} لمجموعة: ${groupName}${newLogsToInculcate.length > 0 ? ` (وإرسال تلقائي لـ ${newLogsToInculcate.length} إشعار غياب عبر واتساب)` : ''}`,
+      'attendance'
+    );
+  };
+
+  // Re-send WhatsApp message manually from administration logs panel
+  const handleResendWhatsAppMessage = async (log: WhatsAppLog) => {
+    const student = state.students.find(s => s.id === log.studentId);
+    let groupName = "مجموعة السنتر";
+    if (student && student.groupIds && student.groupIds.length > 0) {
+      const group = state.groups.find(g => g.id === student.groupIds[0]);
+      if (group) {
+        groupName = group.name;
+      }
+    }
+
+    try {
+      const response = await fetch("/api/whatsapp/send-absence", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          studentName: log.studentName,
+          gradeName: groupName,
+          absenceDate: new Date().toISOString().split('T')[0],
+          parentPhone: log.parentPhone
+        })
+      });
+
+      const resData = await response.json();
+
+      const newLog: WhatsAppLog = {
+        id: `wa-log-${Date.now()}-${log.studentId}`,
+        studentId: log.studentId,
+        studentName: log.studentName,
+        parentPhone: log.parentPhone,
+        message: resData.messageText || log.message,
+        timestamp: new Date().toISOString(),
+        status: resData.sent ? 'success' : 'failed',
+        errorReason: resData.sent ? undefined : (resData.error || "فشل غير معروف من الخادم"),
+        attendanceRecordId: log.attendanceRecordId
+      };
+
+      const refreshed = [newLog, ...(state.whatsAppLogs || [])];
+      await handleStateChange({
+        ...state,
+        whatsAppLogs: refreshed
+      }, `إعادة إرسال رسالة غياب الطالب: ${log.studentName} يدوياً عبر واتساب`, 'attendance');
+
+    } catch (err: any) {
+      console.error("Manual resend failed", err);
+      const errorLog: WhatsAppLog = {
+        id: `wa-log-${Date.now()}-${log.studentId}`,
+        studentId: log.studentId,
+        studentName: log.studentName,
+        parentPhone: log.parentPhone,
+        message: log.message,
+        timestamp: new Date().toISOString(),
+        status: 'failed',
+        errorReason: err.message || "عطل في الاتصال بخدمة الإرسال",
+        attendanceRecordId: log.attendanceRecordId
+      };
+
+      const refreshed = [errorLog, ...(state.whatsAppLogs || [])];
+      await handleStateChange({
+        ...state,
+        whatsAppLogs: refreshed
+      }, `فشل إعادة إرسال رسالة غياب الطالب: ${log.studentName} يدوياً عبر واتساب`, 'attendance');
+    }
   };
 
   // Run Auto-billing monthly subscription charge algorithm
@@ -584,6 +732,7 @@ export default function App() {
     (!currentSecretary || currentSecretary.permissions?.payments) && { id: 'payments', label: 'الحسابات والفوترة', icon: DollarSign },
     (!currentSecretary || currentSecretary.permissions?.payments) && { id: 'financials', label: 'كشف الحسابات', icon: Calculator },
     (!currentSecretary || currentSecretary.permissions?.attendance) && { id: 'attendance', label: 'الحضور والغياب (QR)', icon: UserCheck },
+    (!currentSecretary || currentSecretary.permissions?.attendance) && { id: 'whatsapp_logs', label: 'سجل رسائل واتساب', icon: MessageSquare },
     (!currentSecretary) && { id: 'secretaries', label: 'إدارة السكرتارية', icon: UserCog },
     (!currentSecretary || currentSecretary.permissions?.logs) && { id: 'audit', label: 'النسخ والأمن', icon: ShieldAlert },
   ].filter(Boolean) as { id: string; label: string; icon: any }[];
@@ -1133,6 +1282,13 @@ export default function App() {
                 onSaveSecretary={handleSaveSecretary}
                 onDeleteSecretary={handleDeleteSecretary}
                 showConfirm={showConfirm}
+              />
+            )}
+
+            {activeTab === 'whatsapp_logs' && (
+              <WhatsAppLogs 
+                logs={state.whatsAppLogs || []}
+                onResendMessage={handleResendWhatsAppMessage}
               />
             )}
 
