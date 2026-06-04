@@ -25,7 +25,7 @@ function formatEgyptianPhoneNumber(phone: string): string {
 // WhatsApp send absence endpoint
 app.post("/api/whatsapp/send-absence", async (req, res) => {
   try {
-    const { studentName, gradeName, absenceDate, parentPhone } = req.body;
+    const { studentName, gradeName, absenceDate, parentPhone, centerName, teacherName } = req.body;
 
     if (!studentName || !gradeName || !absenceDate || !parentPhone) {
       return res.status(400).json({
@@ -62,6 +62,9 @@ app.post("/api/whatsapp/send-absence", async (req, res) => {
       hour12: true
     });
 
+    const cName = centerName || "السنتر التعليمي";
+    const tName = teacherName ? `\nالمدرس: ${teacherName}` : "";
+
     // Prepare message template exactly as instructed
     const messageText = `السلام عليكم ورحمة الله وبركاته
 
@@ -72,11 +75,11 @@ ${studentName}
 ${absenceDate} (في تمام الساعة: ${recordingTime})
 
 الصف:
-${gradeName}
+${gradeName}${tName}
 
-يرجى التواصل مع إدارة السنتر لمعرفة التفاصيل.
+يرجى التواصل مع إدارة سنتر ${cName} لمعرفة التفاصيل.
 
-مع تحيات إدارة السنتر.`;
+مع تحيات إدارة سنتر ${cName}.`;
 
     const url = `https://api.ultramsg.com/${instanceId}/messages/chat`;
     const payload = {

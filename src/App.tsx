@@ -491,6 +491,9 @@ export default function App() {
 
     const group = state.groups.find(g => g.id === record.groupId);
     const groupName = group ? group.name : 'مجموعة عامة';
+    const teacher = group ? state.teachers.find(t => t.id === group.teacherId) : null;
+    const teacherName = teacher ? teacher.name : 'مدرس المادة';
+    const centerName = state.centerSettings?.name || 'السنتر التعليمي';
 
     let nextState = {
       ...state,
@@ -523,7 +526,9 @@ export default function App() {
                 studentName: student.name,
                 gradeName: groupName,
                 absenceDate: record.date,
-                parentPhone: student.parentPhone
+                parentPhone: student.parentPhone,
+                centerName,
+                teacherName
               })
             });
 
@@ -579,12 +584,18 @@ export default function App() {
   const handleResendWhatsAppMessage = async (log: WhatsAppLog) => {
     const student = state.students.find(s => s.id === log.studentId);
     let groupName = "مجموعة السنتر";
+    let teacherName = "مدرس المادة";
     if (student && student.groupIds && student.groupIds.length > 0) {
       const group = state.groups.find(g => g.id === student.groupIds[0]);
       if (group) {
         groupName = group.name;
+        const teacher = state.teachers.find(t => t.id === group.teacherId);
+        if (teacher) {
+          teacherName = teacher.name;
+        }
       }
     }
+    const centerName = state.centerSettings?.name || 'السنتر التعليمي';
 
     try {
       const response = await fetch("/api/whatsapp/send-absence", {
@@ -596,7 +607,9 @@ export default function App() {
           studentName: log.studentName,
           gradeName: groupName,
           absenceDate: new Date().toISOString().split('T')[0],
-          parentPhone: log.parentPhone
+          parentPhone: log.parentPhone,
+          centerName,
+          teacherName
         })
       });
 

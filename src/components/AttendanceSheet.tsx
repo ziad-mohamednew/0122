@@ -94,9 +94,6 @@ export default function AttendanceSheet({
       groupStudents.forEach(s => {
         if (existing && existing.records[s.id]) {
           initialMap[s.id] = existing.records[s.id];
-        } else {
-          // Default to absent until marked present or excused
-          initialMap[s.id] = 'absent';
         }
       });
       
@@ -397,7 +394,7 @@ export default function AttendanceSheet({
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {groupStudents.map((student) => {
-                    const status = currentRecords[student.id] || 'absent';
+                    const status = currentRecords[student.id];
                     return (
                       <tr key={student.id} className="hover:bg-slate-50/30 transition-colors">
                         <td className="p-4 font-mono font-bold text-xs text-slate-500">#{student.code}</td>
