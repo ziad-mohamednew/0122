@@ -10,6 +10,8 @@ export interface Student {
   createdAt: string;
   status: 'active' | 'inactive';
   gender?: 'male' | 'female'; // Gender: 'male' or 'female'
+  passcode?: string; // 4-digit generated password
+  parentPasscode?: string; // 4-digit generated password for parent
 }
 
 export interface Teacher {
@@ -20,6 +22,7 @@ export interface Teacher {
   commissionRate: number; // Percentage e.g. 80%
   createdAt: string;
   gender?: 'male' | 'female'; // Gender: 'male' or 'female'
+  passcode?: string; // 4-digit generated password
 }
 
 export interface Group {

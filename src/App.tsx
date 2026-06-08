@@ -49,6 +49,7 @@ import ConfirmationModal from './components/ConfirmationModal';
 import SecretariesList from './components/SecretariesList';
 import FinancialReports from './components/FinancialReports';
 import WhatsAppLogs from './components/WhatsAppLogs';
+import PasswordManager from './components/PasswordManager';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -199,6 +200,7 @@ export default function App() {
         (activeTab === 'payments' && currentSecretary.permissions?.payments) ||
         (activeTab === 'attendance' && currentSecretary.permissions?.attendance) ||
         (activeTab === 'whatsapp_logs' && currentSecretary.permissions?.logs) ||
+        (activeTab === 'passwords' && currentSecretary.permissions?.logs) ||
         (activeTab === 'audit' && currentSecretary.permissions?.logs);
       
       if (!allowed) {
@@ -345,6 +347,39 @@ export default function App() {
       return () => clearTimeout(timer);
     }
   }, [state.centerSettings?.initialized, state.students.length]);
+
+  // Auto-generate missing passcodes for students and teachers to ensure seamless password management
+  useEffect(() => {
+    if (!state.centerSettings || !state.centerSettings.initialized) return;
+
+    let needsUpdate = false;
+    const updatedTeachers = state.teachers.map(t => {
+      if (!t.passcode) {
+        needsUpdate = true;
+        return { ...t, passcode: Math.floor(1000 + Math.random() * 9000).toString() };
+      }
+      return t;
+    });
+
+    const updatedStudents = state.students.map(s => {
+      let changed = false;
+      let newS = { ...s };
+      if (!newS.passcode) {
+        newS.passcode = Math.floor(1000 + Math.random() * 9000).toString();
+        changed = true;
+      }
+      if (!newS.parentPasscode) {
+        newS.parentPasscode = Math.floor(1000 + Math.random() * 9000).toString();
+        changed = true;
+      }
+      if (changed) needsUpdate = true;
+      return newS;
+    });
+
+    if (needsUpdate) {
+        handleStateChange({ ...state, teachers: updatedTeachers, students: updatedStudents }, "توليد كود مرور تلقائي", "system");
+    }
+  }, [state.teachers, state.students, state.centerSettings]);
 
   // ----- TAB OPERATIONS COMMANDS -----
 
@@ -1122,6 +1157,7 @@ ${gradeName}${tName}
     (!currentSecretary || currentSecretary.permissions?.payments) && { id: 'financials', label: 'كشف الحسابات', icon: Calculator },
     (!currentSecretary || currentSecretary.permissions?.attendance) && { id: 'attendance', label: 'الحضور والغياب (QR)', icon: UserCheck },
     (!currentSecretary || currentSecretary.permissions?.logs) && { id: 'whatsapp_logs', label: 'بوابة وسجلات واتساب', icon: MessageSquare },
+    (!currentSecretary || currentSecretary.permissions?.logs) && { id: 'passwords', label: 'كلمات المرور', icon: Lock },
     (!currentSecretary) && { id: 'secretaries', label: 'إدارة السكرتارية', icon: UserCog },
     (!currentSecretary || currentSecretary.permissions?.logs) && { id: 'audit', label: 'النسخ والأمن', icon: ShieldAlert },
   ].filter(Boolean) as { id: string; label: string; icon: any }[];
@@ -1707,6 +1743,15 @@ ${gradeName}${tName}
                 onResendMessage={handleResendWhatsAppMessage}
                 onClearLogs={handleClearWhatsAppLogs}
                 onSendDirectTest={handleSendDirectTest}
+              />
+            )}
+
+            {activeTab === 'passwords' && (
+              <PasswordManager
+                teachers={state.teachers}
+                students={state.students}
+                secretaries={state.secretaries || []}
+                centerSettings={state.centerSettings}
               />
             )}
 
