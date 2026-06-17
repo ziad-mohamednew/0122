@@ -93,6 +93,33 @@ export default function Dashboard({ students, groups, teachers, payments, onNavi
       .slice(0, 5);
   }, [payments, hasPaymentsAccess]);
 
+  const dynamicLateStudents = useMemo(() => {
+    if (!hasStudentsAccess || !hasPaymentsAccess) return [];
+    
+    const today = new Date();
+    // Only check if after 15th of month
+    if (today.getDate() <= 15) return [];
+
+    const currentYearMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+    
+    const lateList: { student: Student; unPaidGroups: Group[], missingAmount: number }[] = [];
+
+    students.filter(s => s.status === 'active' && s.groupIds && s.groupIds.length > 0).forEach(student => {
+      // Find payments made by this student for this month
+      const currentMonthPayments = payments.filter(p => p.studentId === student.id && p.months && p.months.includes(currentYearMonth));
+      
+      if (currentMonthPayments.length === 0) {
+        const unPaidGroups = groups.filter(g => student.groupIds.includes(g.id));
+        if (unPaidGroups.length > 0) {
+          const missingAmount = unPaidGroups.reduce((acc, g) => acc + g.price, 0);
+          lateList.push({ student, unPaidGroups, missingAmount });
+        }
+      }
+    });
+
+    return lateList;
+  }, [students, payments, groups, hasStudentsAccess, hasPaymentsAccess]);
+
   const containerVariants = {
     hidden: { opacity: 0 },
     show: {
@@ -347,50 +374,54 @@ export default function Dashboard({ students, groups, teachers, payments, onNavi
           </div>
 
           {/* Late payments alerts list */}
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs overflow-hidden transition-colors">
-            <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center bg-linear-to-l from-rose-50/15 dark:from-rose-950/20">
+          <div className={`rounded-2xl border shadow-xs overflow-hidden transition-colors ${dynamicLateStudents.length > 0 ? 'bg-rose-50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/50' : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800'}`}>
+            <div className={`p-6 border-b flex justify-between items-center ${dynamicLateStudents.length > 0 ? 'border-rose-100 dark:border-rose-900/50 bg-linear-to-l from-rose-100/50 dark:from-rose-900/30' : 'border-slate-50 dark:border-slate-800 bg-linear-to-l from-rose-50/15 dark:from-rose-950/20'}`}>
               <div>
-                <h3 className="font-bold text-slate-805 dark:text-rose-400 text-base">الطلاب المتأخرين عن الدفع (مطلوب مراجعتهم)</h3>
-                <p className="text-slate-500 dark:text-slate-455 text-xs mt-1">الطلاب ذوي الأرصدة السلبية الذين بحاجة إلى تذكير بالدفع.</p>
+                <h3 className={`font-bold text-base ${dynamicLateStudents.length > 0 ? 'text-rose-700 dark:text-rose-400' : 'text-slate-805 dark:text-rose-400'}`}>
+                  المتأخرين عن الدفع للشهر الحالي (رصد تلقائي)
+                </h3>
+                <p className={`text-xs mt-1 ${dynamicLateStudents.length > 0 ? 'text-rose-600 dark:text-rose-400/80 font-semibold' : 'text-slate-500 dark:text-slate-455'}`}>
+                  {dynamicLateStudents.length > 0 
+                    ? `تنبيه: لقد تجاوزنا يوم 15 من الشهر الحالي وهناك ${dynamicLateStudents.length} طلاب مسجلين بمجموعات لم يسددوا اشتراكاتهم!`
+                    : 'الطلاب المتأخرين عن الدفع يتم رصدهم تلقائياً بعد يوم 15 من كل شهر.'}
+                </p>
               </div>
               <button 
-                onClick={() => onNavigate('students')}
+                onClick={() => onNavigate('payments')}
                 className="text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 text-xs font-bold transition-colors"
               >
-                إدارة ملفات الطلاب ←
+                إدارة المدفوعات ←
               </button>
             </div>
 
-            {students.filter(s => s.balance < 0).length === 0 ? (
+            {dynamicLateStudents.length === 0 ? (
               <div className="p-8 text-center text-emerald-600 dark:text-emerald-400 text-sm font-semibold">
-                🎉 جميع الطلاب المسجلين قاموا بسداد مستحقاتهم بالكامل!
+                🎉 لا توجد متأخرات للشهر الحالي حتى الآن!
               </div>
             ) : (
-              <div className="divide-y divide-slate-50 dark:divide-slate-800 max-h-[300px] overflow-y-auto">
-                {students.filter(s => s.balance < 0).map((s) => (
-                  <div key={s.id} className="p-4 flex justify-between items-center hover:bg-slate-50/50 dark:hover:bg-slate-850/30 transition-colors">
+              <div className="divide-y divide-rose-100 dark:divide-rose-900/30 max-h-[300px] overflow-y-auto">
+                {dynamicLateStudents.map(({ student, unPaidGroups, missingAmount }) => (
+                  <div key={student.id} className="p-4 flex justify-between items-center hover:bg-rose-100/50 dark:hover:bg-rose-900/20 transition-colors">
                     <div>
-                      <p className="font-bold text-slate-800 dark:text-slate-200 text-sm">{s.name}</p>
-                      <div className="flex gap-4 text-xs text-slate-400 dark:text-slate-500 mt-1">
-                        <span>كود الطالب: {s.code}</span>
-                        <span>•</span>
-                        <span>هاتف ولي الأمر: {s.parentPhone}</span>
+                      <p className="font-bold text-slate-800 dark:text-slate-200 text-sm">{student.name}</p>
+                      <div className="flex gap-4 text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                        <span>مجموعات غير مسددة: {unPaidGroups.map(g => g.name).join('، ')}</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="bg-rose-100/70 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 font-bold px-2.5 py-1 rounded-lg text-sm border border-rose-200/40">
-                        {s.balance} جنيه
+                      <span className="bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 font-bold px-2.5 py-1 rounded-lg text-xs border border-rose-200/50">
+                        {missingAmount} جنيه مستحق
                       </span>
                       <a 
-                        href={`https://wa.me/2${s.parentPhone}?text=${encodeURIComponent(
-                          `السلام عليكم ورحمة الله وبركاته، نود تذكيركم بأن الطالب(ة) ${s.name} لديه متأخرات سداد في السنتر التعليمي بقيمة ${Math.abs(s.balance)} جنيه مصري. يرجى التكرم بالسداد في أقرب وقت. شكراً لكم.`
+                        href={`https://wa.me/2${student.parentPhone}?text=${encodeURIComponent(
+                          `السلام عليكم ورحمة الله وبركاته، نود تنبيهكم بأن الطالب(ة) ${student.name} لم يقم بسداد قيمة اشتراك الشهر الحالي للمجموعات (${unPaidGroups.map(g => g.name).join('، ')}) بقيمة ${missingAmount} جنيه مصري. يرجى التكرم بالسداد في أقرب وقت. شكراً لتعاونكم.`
                         )}`}
                         target="_blank"
                         rel="referrer"
-                        className="bg-emerald-500 hover:bg-emerald-600 text-white p-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1 shadow-sm"
+                        className="bg-rose-600 hover:bg-rose-700 text-white p-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1 shadow-sm"
                         title="إرسال تذكير عبر واتساب"
                       >
-                        📞 تذكير
+                         تنبيه ولي الأمر
                       </a>
                     </div>
                   </div>
@@ -398,6 +429,28 @@ export default function Dashboard({ students, groups, teachers, payments, onNavi
               </div>
             )}
           </div>
+
+          {/* Legacy Negative Balance alert */}
+          {students.filter(s => s.balance < 0).length > 0 && (
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs overflow-hidden transition-colors">
+              <div className="p-4 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center bg-linear-to-l from-amber-50/15 dark:from-amber-950/20">
+                <h3 className="font-bold text-amber-700 dark:text-amber-500 text-sm">أرصدة سلبية أخرى (مرحلة سابقة)</h3>
+              </div>
+              <div className="divide-y divide-slate-50 dark:divide-slate-800 max-h-[200px] overflow-y-auto">
+                {students.filter(s => s.balance < 0).map((s) => (
+                  <div key={s.id} className="p-3 flex justify-between items-center hover:bg-slate-50/50 dark:hover:bg-slate-850/30 transition-colors">
+                    <div>
+                      <p className="font-bold text-slate-800 dark:text-slate-200 text-sm">{s.name}</p>
+                    </div>
+                    <span className="bg-amber-100/70 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 font-bold px-2 py-0.5 rounded text-xs border border-amber-200/40">
+                      {s.balance} جنيه
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
 
         </motion.div>
 

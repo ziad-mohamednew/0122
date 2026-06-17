@@ -1433,12 +1433,12 @@ ${gradeName}${tName}
                     onClick={() => {
                       const adminPassword = state.centerSettings?.password;
                       if (adminPassword) {
-                        const confirmPin = prompt("🔑 يرجى كتابة الرقم السري للمدير (الـ Admin) لتأكيد هويتك والعودة لحساب المسؤول الأول:");
-                        if (confirmPin === null) return; // user cancelled
-                        if (confirmPin !== adminPassword) {
-                          alert("❌ الرقم السري للمسؤول غير صحيحة! يرجى المحاولة مرة أخرى.");
-                          return;
-                        }
+                        // Instead of using blocked prompt(), safely lock the system!
+                        // The master lock screen will automatically handle re-authenticating the admin.
+                        try {
+                          sessionStorage.removeItem('educenter_unlocked_password');
+                        } catch (e) {}
+                        setUnlockedPassword('');
                       }
                       setCurrentSecretary(null);
                       setActiveTab('dashboard');

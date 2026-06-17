@@ -39,6 +39,17 @@ interface StudentsListProps {
   }) => void;
 }
 
+const formatTime12 = (time24: string) => {
+  if (!time24) return '';
+  const [hour, minute] = time24.split(':');
+  if (!hour || !minute) return time24;
+  let h = parseInt(hour, 10);
+  const ampm = h >= 12 ? 'م' : 'ص';
+  h = h % 12;
+  h = h ? h : 12; // 0 becomes 12
+  return `${h}:${minute} ${ampm}`;
+};
+
 export default function StudentsList({ 
   students, 
   groups, 
@@ -164,7 +175,7 @@ export default function StudentsList({
       // Attempt to assign the first schedule by default if it exists
       const groupInfo = groups.find(g => g.id === groupId);
       if (groupInfo?.schedules && groupInfo.schedules.length > 0) {
-        const firstSchedule = `${groupInfo.schedules[0].day} ${groupInfo.schedules[0].time}`;
+        const firstSchedule = `${groupInfo.schedules[0].day} ${formatTime12(groupInfo.schedules[0].time)}`;
         setStudentGroupSchedules(prev => ({ ...prev, [groupId]: firstSchedule }));
       }
     }
@@ -647,8 +658,8 @@ export default function StudentsList({
                                 className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 focus:outline-none focus:border-indigo-500"
                               >
                                 {g.schedules.map((sch, i) => (
-                                  <option key={i} value={`${sch.day} ${sch.time}`}>
-                                    {sch.day} - {sch.time}
+                                  <option key={i} value={`${sch.day} ${formatTime12(sch.time)}`}>
+                                    {sch.day} - {formatTime12(sch.time)}
                                   </option>
                                 ))}
                               </select>

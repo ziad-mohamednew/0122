@@ -35,6 +35,17 @@ interface AttendanceSheetProps {
   }) => void;
 }
 
+const formatTime12 = (time24: string) => {
+  if (!time24) return '';
+  const [hour, minute] = time24.split(':');
+  if (!hour || !minute) return time24;
+  let h = parseInt(hour, 10);
+  const ampm = h >= 12 ? 'م' : 'ص';
+  h = h % 12;
+  h = h ? h : 12; // 0 becomes 12
+  return `${h}:${minute} ${ampm}`;
+};
+
 export default function AttendanceSheet({ 
   students, 
   groups, 
@@ -46,9 +57,25 @@ export default function AttendanceSheet({
 }: AttendanceSheetProps) {
   
   // Selection states
+  const [selectedTeacherId, setSelectedTeacherId] = useState('');
   const [selectedGroupId, setSelectedGroupId] = useState('');
+  const [selectedGroupSchedule, setSelectedGroupSchedule] = useState('');
+  
   const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().split('T')[0]);
   const [studentSearch, setStudentSearch] = useState('');
+
+  // Handle teacher change
+  const handleTeacherChange = (teacherId: string) => {
+    setSelectedTeacherId(teacherId);
+    setSelectedGroupId('');
+    setSelectedGroupSchedule('');
+  };
+
+  // Handle group change
+  const handleGroupChange = (groupId: string) => {
+    setSelectedGroupId(groupId);
+    setSelectedGroupSchedule('');
+  };
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -118,11 +145,23 @@ export default function AttendanceSheet({
     });
   };
 
+  // Filter students showing in list of selected group
+  const groupStudents = useMemo(() => {
+    if (!selectedGroupId) return [];
+    return students
+      .filter(s => s.groupIds && s.groupIds.includes(selectedGroupId) && s.status === 'active')
+      .filter(s => {
+        if (!selectedGroupSchedule) return true; // If no schedule selected, show all in group
+        return s.groupSchedules?.[selectedGroupId] === selectedGroupSchedule;
+      })
+      .filter(s => s.name.toLowerCase().includes(studentSearch.toLowerCase()) || s.code.includes(studentSearch));
+  }, [students, selectedGroupId, studentSearch, selectedGroupSchedule]);
+
   // Mass Check-All
   const handleMarkAllPresent = () => {
     const updated = { ...currentRecords };
-    Object.keys(updated).forEach(id => {
-      updated[id] = 'present';
+    groupStudents.forEach(s => {
+      updated[s.id] = 'present';
     });
     setCurrentRecords(updated);
     
@@ -138,8 +177,8 @@ export default function AttendanceSheet({
   // Mass Uncheck-All
   const handleMarkAllAbsent = () => {
     const updated = { ...currentRecords };
-    Object.keys(updated).forEach(id => {
-      updated[id] = 'absent';
+    groupStudents.forEach(s => {
+      updated[s.id] = 'absent';
     });
     setCurrentRecords(updated);
 
@@ -151,14 +190,6 @@ export default function AttendanceSheet({
       timestamp: new Date().toISOString()
     });
   };
-
-  // Filter students showing in list of selected group
-  const groupStudents = useMemo(() => {
-    if (!selectedGroupId) return [];
-    return students
-      .filter(s => s.groupIds && s.groupIds.includes(selectedGroupId) && s.status === 'active')
-      .filter(s => s.name.toLowerCase().includes(studentSearch.toLowerCase()) || s.code.includes(studentSearch));
-  }, [students, selectedGroupId, studentSearch]);
 
   // QR Simulator/Hardware input scanner form submit
   const handleQRScannerSubmit = (e: React.FormEvent) => {
@@ -297,22 +328,52 @@ export default function AttendanceSheet({
       </div>
 
       {/* Selector Panels Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
+        {/* Select Teacher */}
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-100 dark:border-slate-800 shadow-2xs space-y-2 transition-colors">
+          <label className="block text-slate-700 dark:text-slate-300 text-xs font-bold">المعلم</label>
+          <select 
+            value={selectedTeacherId}
+            onChange={(e) => handleTeacherChange(e.target.value)}
+            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-slate-700 dark:text-slate-300 text-sm focus:outline-hidden"
+          >
+            <option value="">-- اختر المعلم --</option>
+            {teachers.map(t => (
+              <option key={t.id} value={t.id}>{t.name}</option>
+            ))}
+          </select>
+        </div>
+
         {/* Select group */}
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-100 dark:border-slate-808 shadow-2xs space-y-2 transition-colors">
-          <label className="block text-slate-700 dark:text-slate-300 text-xs font-bold">المجموعة التعليمية المستهدفة</label>
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-100 dark:border-slate-800 shadow-2xs space-y-2 transition-colors">
+          <label className="block text-slate-700 dark:text-slate-300 text-xs font-bold">المجموعة التعليمية</label>
           <select 
             value={selectedGroupId}
-            onChange={(e) => setSelectedGroupId(e.target.value)}
-            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-700 dark:text-slate-300 text-sm focus:outline-hidden"
+            onChange={(e) => handleGroupChange(e.target.value)}
+            disabled={!selectedTeacherId}
+            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-slate-700 dark:text-slate-300 text-sm focus:outline-hidden disabled:opacity-50"
           >
             <option value="">-- اختر المجموعة --</option>
-            {groups.map(g => {
-              const trainer = teachers.find(t => t.id === g.teacherId);
-              return (
-                <option key={g.id} value={g.id}>{g.name} ({trainer ? trainer.name : 'بدون معلم'})</option>
-              );
+            {groups.filter(g => g.teacherId === selectedTeacherId).map(g => (
+              <option key={g.id} value={g.id}>{g.name}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Select schedule */}
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-100 dark:border-slate-800 shadow-2xs space-y-2 transition-colors">
+          <label className="block text-slate-700 dark:text-slate-300 text-xs font-bold">الميعاد</label>
+          <select 
+            value={selectedGroupSchedule}
+            onChange={(e) => setSelectedGroupSchedule(e.target.value)}
+            disabled={!selectedGroupId}
+            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-slate-700 dark:text-slate-300 text-sm focus:outline-hidden disabled:opacity-50"
+          >
+            <option value="">-- كل المواعيد --</option>
+            {selectedGroupId && groups.find(g => g.id === selectedGroupId)?.schedules?.map((sch, idx) => {
+              const val = `${sch.day} ${formatTime12(sch.time)}`;
+              return <option key={idx} value={val}>{val}</option>;
             })}
           </select>
         </div>
@@ -337,7 +398,7 @@ export default function AttendanceSheet({
       {/* Main Attendance Sheet Section */}
       {!selectedGroupId ? (
         <div className="bg-white dark:bg-slate-900 p-20 text-center text-slate-400 dark:text-slate-500 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs transition-colors">
-          يرجى اختيار المجموعة التعليمية والمادة الدراسية لعرض قائمة حضور الطلاب وكشوفات التحضير.
+          يرجى تحديد المعلم، ثم اختيار المجموعة التعليمية والميعاد لعرض كشف حضور وتغييب الطلاب.
         </div>
       ) : (
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs overflow-hidden transition-colors">
