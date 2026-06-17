@@ -5,6 +5,7 @@ export interface Student {
   phone: string;
   parentPhone: string;
   groupIds: string[]; // Linked groups
+  groupSchedules?: { [groupId: string]: string }; // Assigned schedule per group
   teacherIds: string[]; // Associated teachers
   balance: number; // Student positive or negative balance (dues)
   createdAt: string;

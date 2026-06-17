@@ -63,6 +63,7 @@ export default function StudentsList({
   const [parentPhone, setParentPhone] = useState('');
   const [studentGender, setStudentGender] = useState<'male' | 'female'>('male');
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
+  const [studentGroupSchedules, setStudentGroupSchedules] = useState<{ [groupId: string]: string }>({});
   const [studentBalance, setStudentBalance] = useState(0);
   const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
   const [formError, setFormError] = useState('');
@@ -115,6 +116,7 @@ export default function StudentsList({
       phone: studentPhone,
       parentPhone: parentPhone,
       groupIds: selectedGroups,
+      groupSchedules: studentGroupSchedules,
       teacherIds: studentTeachers,
       balance: editingStudentId ? (students.find(s => s.id === editingStudentId)?.balance || 0) : Number(studentBalance),
       status: 'active',
@@ -132,6 +134,7 @@ export default function StudentsList({
     setParentPhone('');
     setStudentGender('male');
     setSelectedGroups([]);
+    setStudentGroupSchedules({});
     setStudentBalance(0);
     setFormError('');
   };
@@ -143,6 +146,7 @@ export default function StudentsList({
     setParentPhone(student.parentPhone);
     setStudentGender(student.gender || 'male');
     setSelectedGroups(student.groupIds || []);
+    setStudentGroupSchedules(student.groupSchedules || {});
     setFormError('');
     setIsFormOpen(true);
   };
@@ -150,8 +154,19 @@ export default function StudentsList({
   const handleGroupCheckboxChange = (groupId: string) => {
     if (selectedGroups.includes(groupId)) {
       setSelectedGroups(selectedGroups.filter(id => id !== groupId));
+      setStudentGroupSchedules(prev => {
+        const newData = { ...prev };
+        delete newData[groupId];
+        return newData;
+      });
     } else {
       setSelectedGroups([...selectedGroups, groupId]);
+      // Attempt to assign the first schedule by default if it exists
+      const groupInfo = groups.find(g => g.id === groupId);
+      if (groupInfo?.schedules && groupInfo.schedules.length > 0) {
+        const firstSchedule = `${groupInfo.schedules[0].day} ${groupInfo.schedules[0].time}`;
+        setStudentGroupSchedules(prev => ({ ...prev, [groupId]: firstSchedule }));
+      }
     }
   };
 
@@ -175,9 +190,13 @@ export default function StudentsList({
 
   // Export to Excel 
   const handleExportExcel = () => {
-    const headers = ["الكود/الرمز", "اسم الطالب بالكامل", "النوع (الجنس)", "تليفون الطالب", "تليفون ولي الأمر", "المجموعات المسجلة", "الرصيد المالي", "الحالة"];
+    const headers = ["الكود/الرمز", "اسم الطالب بالكامل", "النوع (الجنس)", "تليفون الطالب", "تليفون ولي الأمر", "المجموعات المسجلة ومواعيدها", "الرصيد المالي", "الحالة"];
     const rows = filteredStudents.map(s => {
-      const linkedGroupNames = s.groupIds ? s.groupIds.map(gId => groups.find(g => g.id === gId)?.name || '').filter(Boolean).join(' | ') : '';
+      const linkedGroupNames = s.groupIds ? s.groupIds.map(gId => {
+        const group = groups.find(g => g.id === gId);
+        const schedule = s.groupSchedules?.[gId] ? ` (${s.groupSchedules[gId]})` : '';
+        return group ? `${group.name}${schedule}` : '';
+      }).filter(Boolean).join(' | ') : '';
       return [
         s.code,
         s.name,
@@ -194,9 +213,13 @@ export default function StudentsList({
 
   // Export to PDF
   const handleExportPDF = () => {
-    const headers = ["الكود", "اسم الطالب بالكامل", "النوع", "تليفون الطالب", "تليفون ولي الأمر", "المجموعات المسجلة", "الرصيد المالي", "الحالة"];
+    const headers = ["الكود", "اسم الطالب بالكامل", "النوع", "تليفون الطالب", "تليفون ولي الأمر", "المجموعات المسجلة ومواعيدها", "الرصيد المالي", "الحالة"];
     const rows = filteredStudents.map(s => {
-      const linkedGroupNames = s.groupIds ? s.groupIds.map(gId => groups.find(g => g.id === gId)?.name || '').filter(Boolean).join(' ، ') : '';
+      const linkedGroupNames = s.groupIds ? s.groupIds.map(gId => {
+        const group = groups.find(g => g.id === gId);
+        const schedule = s.groupSchedules?.[gId] ? ` (${s.groupSchedules[gId]})` : '';
+        return group ? `${group.name}${schedule}` : '';
+      }).filter(Boolean).join(' ، ') : '';
       return [
         s.code,
         s.name,
@@ -475,11 +498,14 @@ export default function StudentsList({
                       {studentGroupsObj.length === 0 ? (
                         <span className="text-slate-400 dark:text-slate-500 text-xs italic">غير ملحق بمجموعات حالياً</span>
                       ) : (
-                        <div className="flex flex-wrap gap-1">
+                        <div className="flex flex-wrap gap-1.5">
                           {studentGroupsObj.map(g => (
-                            <span key={g.id} className="bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-400 text-[10px] px-2 py-0.5 rounded-md">
-                              {g.name}
-                            </span>
+                            <div key={g.id} className="bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-100 dark:border-indigo-900/40 text-indigo-700 dark:text-indigo-400 text-[10px] px-2 py-1 rounded-md flex flex-col">
+                              <span className="font-bold">{g.name}</span>
+                              {s.groupSchedules?.[g.id] && (
+                                <span className="text-[9px] opacity-80 mt-0.5">{s.groupSchedules[g.id]}</span>
+                              )}
+                            </div>
                           ))}
                         </div>
                       )}
@@ -597,21 +623,38 @@ export default function StudentsList({
 
                 {/* Linking groups checkboxes */}
                 <div>
-                  <label className="block text-slate-600 text-xs font-semibold mb-1.5">ربط المجموعات الدراسية</label>
+                  <label className="block text-slate-600 text-xs font-semibold mb-1.5">ربط المجموعات الدراسية واختيار الميعاد</label>
                   {groups.length === 0 ? (
                     <p className="text-xs text-amber-600 dark:text-amber-400">لا تتوفر مجموعات بالسنتر لربطها. يرجى إنشاء مجموعات أولاً.</p>
                   ) : (
-                    <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-200 dark:border-slate-800 max-h-36 overflow-y-auto space-y-2 selection:bg-indigo-500/30">
+                    <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-200 dark:border-slate-800 max-h-[300px] overflow-y-auto space-y-3 selection:bg-indigo-500/30">
                       {groups.map(g => (
-                        <label key={g.id} className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-650 dark:text-slate-300">
-                          <input 
-                            type="checkbox" 
-                            checked={selectedGroups.includes(g.id)}
-                            onChange={() => handleGroupCheckboxChange(g.id)}
-                            className="w-4 h-4 rounded-sm border-slate-350 text-indigo-600 focus:ring-indigo-500"
-                          />
-                          <span>{g.name} - (قيمة: {g.price} جنيه)</span>
-                        </label>
+                        <div key={g.id} className="flex flex-col gap-2">
+                          <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-650 dark:text-slate-300">
+                            <input 
+                              type="checkbox" 
+                              checked={selectedGroups.includes(g.id)}
+                              onChange={() => handleGroupCheckboxChange(g.id)}
+                              className="w-4 h-4 rounded-sm border-slate-350 text-indigo-600 focus:ring-indigo-500"
+                            />
+                            <span>{g.name} - (قيمة: {g.price} جنيه)</span>
+                          </label>
+                          {selectedGroups.includes(g.id) && g.schedules && g.schedules.length > 0 && (
+                            <div className="mr-6">
+                              <select 
+                                value={studentGroupSchedules[g.id] || ''} 
+                                onChange={(e) => setStudentGroupSchedules(prev => ({ ...prev, [g.id]: e.target.value }))}
+                                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 focus:outline-none focus:border-indigo-500"
+                              >
+                                {g.schedules.map((sch, i) => (
+                                  <option key={i} value={`${sch.day} ${sch.time}`}>
+                                    {sch.day} - {sch.time}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+                        </div>
                       ))}
                     </div>
                   )}

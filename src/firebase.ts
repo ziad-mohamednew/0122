@@ -155,10 +155,27 @@ const initialMockData: AppData = {
 const STORAGE_KEY = "educational_center_dashboard_data";
 
 // Helper to sanitize arrays (converting sparse objects to arrays, and removing nulls)
-function sanitizeArray<T>(arr: any): T[] {
+function sanitizeArray<T extends { id?: string }>(arr: any): T[] {
   if (!arr) return [];
   const rawList = Array.isArray(arr) ? arr : Object.values(arr);
-  return rawList.filter((item: any) => item !== null && typeof item === 'object') as T[];
+  const filtered = rawList.filter((item: any) => item !== null && typeof item === 'object') as T[];
+  
+  // Deduplicate by id if present
+  const seenIds = new Set<string>();
+  const uniqueList: T[] = [];
+  
+  for (const item of filtered) {
+    if (item.id) {
+      if (!seenIds.has(item.id)) {
+        seenIds.add(item.id);
+        uniqueList.push(item);
+      }
+    } else {
+      uniqueList.push(item);
+    }
+  }
+  
+  return uniqueList;
 }
 
 function removeUndefinedRecursive(obj: any): any {
