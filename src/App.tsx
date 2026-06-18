@@ -210,10 +210,31 @@ export default function App() {
   }, [currentSecretary, activeTab]);
 
   // Save changes locally and sync sementically with RTDB
-  const handleStateChange = async (updatedData: AppData, logMsg?: string, category?: AuditLog['category']) => {
+  const handleStateChange = async (updatedData: AppData, logMsg?: string, category?: AuditLog['category'], newNotifications?: AppNotification[]) => {
+    // 1. Merge the notifications into the local state
+    if (newNotifications && newNotifications.length > 0) {
+      updatedData.notifications = [...newNotifications, ...(updatedData.notifications || [])].slice(0, 1000);
+    }
+    
+    // 2. React state update
     setState({ ...updatedData });
     const operatorName = currentSecretary ? `${currentSecretary.name} (سكرتير)` : "المدير العام";
+    
+    // 3. Central write to all Firebase nodes securely
     await saveAppData(updatedData, logMsg, category, operatorName);
+
+    // 4. Fire the true FCM Push Notification background tasks
+    if (newNotifications && newNotifications.length > 0) {
+      newNotifications.forEach(record => {
+        fetch('/api/fcm/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(record)
+        }).catch(e => {
+          console.warn("FCM Gateway is unreachable or failed:", e);
+        });
+      });
+    }
   };
 
   // Daily Closing & Automatic Backup state managers
@@ -361,6 +382,13 @@ export default function App() {
       return t;
     });
 
+    const existingParentPasscodes = new Map<string, string>();
+    state.students.forEach(s => {
+      if (s.parentPhone && s.parentPasscode) {
+        existingParentPasscodes.set(s.parentPhone, s.parentPasscode);
+      }
+    });
+
     const updatedStudents = state.students.map(s => {
       let changed = false;
       let newS = { ...s };
@@ -368,10 +396,28 @@ export default function App() {
         newS.passcode = Math.floor(1000 + Math.random() * 9000).toString();
         changed = true;
       }
-      if (!newS.parentPasscode) {
-        newS.parentPasscode = Math.floor(1000 + Math.random() * 9000).toString();
-        changed = true;
+      
+      const pPhone = newS.parentPhone;
+      if (pPhone) {
+        if (existingParentPasscodes.has(pPhone)) {
+          if (newS.parentPasscode !== existingParentPasscodes.get(pPhone)) {
+            newS.parentPasscode = existingParentPasscodes.get(pPhone);
+            changed = true;
+          }
+        } else {
+          if (!newS.parentPasscode) {
+            newS.parentPasscode = Math.floor(1000 + Math.random() * 9000).toString();
+            changed = true;
+          }
+          existingParentPasscodes.set(pPhone, newS.parentPasscode!);
+        }
+      } else {
+        if (!newS.parentPasscode) {
+          newS.parentPasscode = Math.floor(1000 + Math.random() * 9000).toString();
+          changed = true;
+        }
       }
+
       if (changed) needsUpdate = true;
       return newS;
     });
@@ -732,6 +778,7 @@ ${gradeName}${tName}
     );
 
     const newLogsToInculcate: WhatsAppLog[] = [];
+    const newNotifications: AppNotification[] = [];
 
     for (const studentId of absentStudentIds) {
       const attendanceRecordId = `${studentId}_${record.groupId}_${record.date}`;
@@ -741,6 +788,22 @@ ${gradeName}${tName}
         const student = state.students.find(s => s.id === studentId);
         if (student) {
           const uniqueId = `wa-log-${Date.now()}-${studentId}`;
+          const notifId = `notif-${Date.now()}-${studentId}`;
+
+          const messageBody = `نحيطكم علماً بأن الطالب/الطالبة ${student.name} (${groupName}) قد تم تسجيل غيابه عن حضور حصة اليوم ${record.date}.`;
+
+          newNotifications.push({
+            notificationId: notifId,
+            title: 'تسجيل غياب',
+            body: messageBody,
+            receiverId: student.parentPhone,
+            receiverRole: 'parent',
+            createdAt: new Date().toISOString(),
+            readStatus: false,
+            notificationType: 'attendance',
+            eventId: attendanceRecordId
+          });
+
           try {
             const resData = await dispatchWhatsAppMessageDirect({
               studentName: student.name,
@@ -771,7 +834,7 @@ ${gradeName}${tName}
               studentId: student.id,
               studentName: student.name,
               parentPhone: student.parentPhone,
-              message: `نحيط سيادتكم علماً بأن الطالب: ${student.name} غائب اليوم ${record.date}...`,
+              message: messageBody,
               timestamp: new Date().toISOString(),
               status: 'failed',
               errorReason: err.message || "فشل الاتصال بالخادم الرئيسي",
@@ -792,8 +855,9 @@ ${gradeName}${tName}
 
     await handleStateChange(
       nextState,
-      `تحديث دفتر الحضور والغياب ليوم ${record.date} لمجموعة: ${groupName}${newLogsToInculcate.length > 0 ? ` (وإرسال تلقائي لـ ${newLogsToInculcate.length} إشعار غياب عبر واتساب)` : ''}`,
-      'attendance'
+      `تحديث دفتر الحضور والغياب ليوم ${record.date} لمجموعة: ${groupName}${newLogsToInculcate.length > 0 ? ` (وإرسال تلقائي لـ ${newLogsToInculcate.length} إشعار غياب)` : ''}`,
+      'attendance',
+      newNotifications.length > 0 ? newNotifications : undefined
     );
   };
 

@@ -124,6 +124,27 @@ export interface WhatsAppLog {
   attendanceRecordId?: string; // to track duplicate prevention
 }
 
+export interface AppNotification {
+  notificationId: string;
+  title: string;
+  body: string;
+  receiverId: string | 'all'; // Could be 'all', student code, parent phone
+  receiverRole: 'parent' | 'student' | 'teacher' | 'all';
+  createdAt: string;
+  readStatus: boolean;
+  notificationType: 'attendance' | 'announcement' | 'message' | 'system';
+  eventId?: string; // For idempotency mapping
+}
+
+export interface PushSubscriber {
+  uid: string;
+  role: 'parent' | 'student' | 'teacher';
+  name: string;
+  phone: string;
+  fcmToken: string;
+  active: boolean;
+}
+
 export interface AppData {
   students: Student[];
   teachers: Teacher[];
@@ -135,4 +156,5 @@ export interface AppData {
   centerSettings?: CenterSettings;
   expenses?: Expense[];
   whatsAppLogs?: WhatsAppLog[];
+  notifications?: AppNotification[];
 }

@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getDatabase, ref, set, onValue, get } from 'firebase/database';
-import { Student, Teacher, Group, Payment, AttendanceRecord, AuditLog, AppData, CenterSettings, Secretary, Expense, WhatsAppLog } from './types';
+import { getDatabase, ref, set, push, onValue, get } from 'firebase/database';
+import { Student, Teacher, Group, Payment, AttendanceRecord, AuditLog, AppData, CenterSettings, Secretary, Expense, WhatsAppLog, AppNotification } from './types';
 
 // Realtime Database URL provided by the user
 const DATABASE_URL = "https://center-management-legislator-default-rtdb.europe-west1.firebasedatabase.app/";
@@ -15,7 +15,7 @@ const firebaseConfig = {
   storageBucket: "center-management-legislator.appspot.com",
 };
 
-let db: any = null;
+export let db: any = null;
 let isFirebaseConnected = false;
 
 try {
@@ -148,7 +148,8 @@ const initialMockData: AppData = {
       details: "تم تشغيل نظام إدارة السنتر التعليمي للمرة الأولى بنجاح.",
       operator: "المدير العام"
     }
-  ]
+  ],
+  notifications: []
 };
 
 // Local storage key
@@ -208,6 +209,7 @@ export function sanitizeData(data: any): AppData {
     auditLogs: sanitizeArray<AuditLog>(data.auditLogs),
     expenses: sanitizeArray<Expense>(data.expenses),
     whatsAppLogs: sanitizeArray<WhatsAppLog>(data.whatsAppLogs),
+    notifications: sanitizeArray<AppNotification>(data.notifications),
     centerSettings: data.centerSettings ? {
       name: String(data.centerSettings.name || ''),
       address: String(data.centerSettings.address || ''),
@@ -337,8 +339,23 @@ export async function saveAppData(data: AppData, actionDescription?: string, cat
   // Push to Firebase RTDB instantly using set to guarantee real-time server-side synchronization
   if (isFirebaseConnected && db) {
     try {
-      const dbRef = ref(db, 'center_management_data');
-      await set(dbRef, cleanData);
+      // Modern separate modular nodes for notifications engine & apps
+      const promises = [
+        set(ref(db, 'students'), cleanData.students),
+        set(ref(db, 'teachers'), cleanData.teachers),
+        set(ref(db, 'groups'), cleanData.groups), // Equivalent to subjects
+        set(ref(db, 'attendance'), cleanData.attendance),
+        set(ref(db, 'payments'), cleanData.payments),
+        set(ref(db, 'secretaries'), cleanData.secretaries || []),
+        set(ref(db, 'settings'), cleanData.centerSettings || {}),
+        set(ref(db, 'logs'), cleanData.auditLogs),
+        set(ref(db, 'notifications'), cleanData.notifications || []),
+        
+        // Push legacy chunk as well not to break anything immediately during transition
+        set(ref(db, 'center_management_data'), cleanData)
+      ];
+
+      await Promise.all(promises);
       updateStatus('connected');
     } catch (err: any) {
       console.warn("Could not sync with Firebase database. Operating offline.", err);

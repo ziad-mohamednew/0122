@@ -78,7 +78,13 @@ export default function PasswordManager({
     <div key={`${type}-${id}`} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-850 transition">
       <div>
         <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm">{name}</h4>
-        <p className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-1">{codeOrPhone}</p>
+        <p className={`text-xs font-mono mt-1 pt-0.5 inline-block rounded transition-all ${
+          !isRevealed(id, type)
+            ? 'blur-sm bg-slate-200 dark:bg-slate-800 text-transparent select-none'
+            : 'text-slate-600 dark:text-slate-400 select-all'
+        }`}>
+          {codeOrPhone}
+        </p>
       </div>
       <div className="flex items-center gap-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-2 rounded-lg min-w-[150px] justify-between shadow-sm">
          <span className="text-slate-600 dark:text-slate-350 font-bold text-xs select-none">
@@ -119,8 +125,27 @@ export default function PasswordManager({
     if (activeTab === 'secretaries') {
       return secretaries.filter(s => s.name.toLowerCase().includes(term) || s.phone.includes(term));
     }
-    if (activeTab === 'students' || activeTab === 'parents') {
+    if (activeTab === 'students') {
       return students.filter(s => s.name.toLowerCase().includes(term) || s.code.toLowerCase().includes(term));
+    }
+    if (activeTab === 'parents') {
+      const parentGroups: Record<string, { id: string, studentNames: string[], parentPhone: string, passcode: string }> = {};
+      students.forEach(s => {
+        const phone = s.parentPhone || s.code; // fallback
+        if (!parentGroups[phone]) {
+          parentGroups[phone] = {
+            id: s.id, // using first student's id as row key
+            studentNames: [s.name],
+            parentPhone: phone,
+            passcode: s.parentPasscode || '----'
+          };
+        } else {
+          if (!parentGroups[phone].studentNames.includes(s.name)) {
+            parentGroups[phone].studentNames.push(s.name);
+          }
+        }
+      });
+      return Object.values(parentGroups).filter(p => p.parentPhone.includes(term) || p.studentNames.some(n => n.toLowerCase().includes(term)));
     }
     return [];
   }, [activeTab, searchTerm, teachers, secretaries, students]);
@@ -241,11 +266,13 @@ export default function PasswordManager({
                }
                if (activeTab === 'students') {
                  const st = item as Student;
-                 return renderPasswordRow(st.id, st.name, st.code, st.passcode, 'student');
+                 return renderPasswordRow(st.id, st.name, `الكود: ${st.code} | الهاتف: ${st.phone}`, st.passcode, 'student');
                }
                if (activeTab === 'parents') {
-                 const st = item as Student;
-                 return renderPasswordRow(st.id, `ولي أمر: ${st.name}`, st.parentPhone || st.code, st.parentPasscode, 'parent');
+                 // item is now the group object
+                 const p = item as any;
+                 const title = `ولي أمر: ${p.studentNames.join('، ')}`;
+                 return renderPasswordRow(p.id, title, p.parentPhone, p.passcode, 'parent');
                }
                return null;
              })
