@@ -219,7 +219,7 @@ export default function StudentsList({
         s.status === 'active' ? 'نشط' : 'موقف'
       ];
     });
-    exportToExcel("تقرير بيانات طلاب السنتر التعليمي تفصيلي", headers, rows, "كشف_طلاب_السنتر");
+    exportToExcel("تقرير بيانات طلاب Manara تفصيلي", headers, rows, "كشف_طلاب_السنتر");
   };
 
   // Export to PDF
@@ -279,7 +279,7 @@ export default function StudentsList({
           </head>
           <body>
             <div class="card">
-              <div class="header">${centerSettings?.name || 'بطاقة الهوية التعليمية'}</div>
+              <div class="header">${centerSettings?.name || 'Manara'}</div>
               <div class="name">${activeCardStudent?.name}</div>
               <div class="code">CODE: ${activeCardStudent?.code}</div>
               <div class="qr-container">
@@ -294,8 +294,9 @@ export default function StudentsList({
                 <strong>${activeCardStudent?.parentPhone}</strong>
               </div>
               <div class="footer" style="font-size: 10px; line-height: 1.4; color: #64748b; margin-top: 15px; border-top: 1px solid #e2e8f0; padding-top: 10px;">
-                ${centerSettings?.name || 'بوابة السنتر التعليمي'}<br/>
-                هاتف: ${centerSettings?.phone || ''} • العنوان: ${centerSettings?.address || ''}
+                ${centerSettings?.name || 'Manara'}<br/>
+                هاتف: ${centerSettings?.phone || ''} • العنوان: ${centerSettings?.address || ''}<br/>
+                <a href="https://wa.me/201031123461" target="_blank" style="text-decoration: none; color: inherit;">Manara by Graphiqa</a>
               </div>
             </div>
             <script>

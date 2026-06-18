@@ -789,8 +789,8 @@ ${gradeName}${tName}
     const groupName = group ? group.name : 'مجموعة عامة';
     const teacher = group ? state.teachers.find(t => t.id === group.teacherId) : null;
     const teacherName = teacher ? teacher.name : 'مدرس المادة';
-    const centerName = state.centerSettings?.name || 'السنتر التعليمي';
-
+    const centerName = state.centerSettings?.name || 'Manara';
+    
     let nextState = {
       ...state,
       attendance: updatedList
@@ -889,7 +889,7 @@ ${gradeName}${tName}
   // Re-send WhatsApp message manually from administration logs panel
   const handleResendWhatsAppMessage = async (log: WhatsAppLog): Promise<{ success: boolean; error?: string }> => {
     const student = state.students.find(s => s.id === log.studentId);
-    let groupName = "مجموعة السنتر";
+    let groupName = "مجموعة Manara";
     let teacherName = "مدرس المادة";
     if (student && student.groupIds && student.groupIds.length > 0) {
       const group = state.groups.find(g => g.id === student.groupIds[0]);
@@ -901,7 +901,7 @@ ${gradeName}${tName}
         }
       }
     }
-    const centerName = state.centerSettings?.name || 'السنتر التعليمي';
+    const centerName = state.centerSettings?.name || 'Manara';
 
     try {
       const resData = await dispatchWhatsAppMessageDirect({
@@ -1092,7 +1092,7 @@ ${gradeName}${tName}
           gradeName: "الصف التدريبي",
           absenceDate: new Date().toISOString().split('T')[0],
           parentPhone: phone,
-          centerName: state.centerSettings?.name || "السنتر التعليمي",
+          centerName: state.centerSettings?.name || "Manara",
           teacherName: "الأستاذ المشرف"
         })
       });
@@ -1287,7 +1287,7 @@ ${gradeName}${tName}
             </span>
 
             <h2 className="text-xl font-extrabold text-white tracking-tight leading-snug">
-              {state.centerSettings?.name || "EduCenter Pro"}
+              {state.centerSettings?.name || "Manara"}
             </h2>
             <p className="text-slate-400 text-xs mt-1.5 font-semibold leading-relaxed">
               يرجى إدخال كلمة المرور السليمة لإلغاء القفل والبدء بإدارة السنتر والعمليات المالية.
@@ -1336,6 +1336,18 @@ ${gradeName}${tName}
             </button>
           </form>
         </motion.div>
+
+        {/* Global Footer */}
+        <div className="fixed bottom-4 pb-2 left-0 right-0 flex justify-center text-xs z-50">
+          <a
+            href="https://wa.me/201031123461"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-slate-500 hover:text-indigo-400 font-bold transition-colors select-none block"
+          >
+            Manara by Graphiqa
+          </a>
+        </div>
       </div>
     );
   }
@@ -1365,7 +1377,7 @@ ${gradeName}${tName}
             </span>
 
             <h2 className="text-2xl font-extrabold text-[#F8FAFC] tracking-tight leading-snug">
-              السنتر التعليمي مغلق الآن ومُؤمن
+              Manara مغلق الآن ومُؤمن
             </h2>
             
             <p className="text-slate-400 text-xs sm:text-sm mt-3 leading-relaxed max-w-sm font-semibold mx-auto">
@@ -1405,6 +1417,18 @@ ${gradeName}${tName}
             <span>🔓 إلغاء التأمين والولوج مجدداً للنظام</span>
           </button>
         </motion.div>
+
+        {/* Global Footer */}
+        <div className="fixed bottom-4 pb-2 left-0 right-0 flex justify-center text-xs z-50">
+          <a
+            href="https://wa.me/201031123461"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-slate-500 hover:text-indigo-400 font-bold transition-colors select-none block"
+          >
+            Manara by Graphiqa
+          </a>
+        </div>
       </div>
     );
   }
@@ -1428,10 +1452,10 @@ ${gradeName}${tName}
               )}
             </div>
             <div className="truncate">
-              <h2 className="font-bold text-xs text-white leading-tight truncate" title={state.centerSettings?.name || "EduCenter Pro"}>
-                {state.centerSettings?.name || "EduCenter Pro"}
+              <h2 className="font-bold text-xs text-white leading-tight truncate" title={state.centerSettings?.name || "Manara"}>
+                {state.centerSettings?.name || "Manara"}
               </h2>
-              <span className="text-[9px] text-slate-400 block mt-0.5 truncate">نظام إدارة السنتر الذكي</span>
+              <span className="text-[9px] text-slate-400 block mt-0.5 truncate">Manara by Graphiqa</span>
             </div>
           </div>
           
@@ -1451,7 +1475,7 @@ ${gradeName}${tName}
               type="button"
               onClick={() => setIsSettingsOpen(true)}
               className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors"
-              title="تعديل بيانات وهوية السنتر"
+              title="تعديل بيانات وهوية Manara"
             >
               <Settings className="w-4 h-4" />
             </button>
@@ -1631,7 +1655,7 @@ ${gradeName}${tName}
             )}
           </div>
           <span className="font-extrabold text-[#F8FAFC] text-sm truncate max-w-[185px]">
-            {state.centerSettings?.name || "بوابة السنتر الذكي"}
+            {state.centerSettings?.name || "بوابة Manara"}
           </span>
         </div>
         
@@ -1718,7 +1742,7 @@ ${gradeName}${tName}
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
-            <span className="text-slate-650">بيانات السنتر التعليمي: </span>
+            <span className="text-slate-650">بيانات Manara: </span>
             <span className="text-[#4F46E5] font-extrabold">مُحدثة بالكامل ولحظية</span>
           </div>
           
@@ -1856,6 +1880,18 @@ ${gradeName}${tName}
             )}
           </motion.div>
         </AnimatePresence>
+
+        {/* Global Footer */}
+        <div className="w-full flex justify-center pb-6 pt-4 text-xs">
+          <a
+            href="https://wa.me/201031123461"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-slate-500 hover:text-indigo-400 font-bold transition-colors select-none"
+          >
+            Manara by Graphiqa
+          </a>
+        </div>
 
       </main>
 
@@ -2062,7 +2098,7 @@ ${gradeName}${tName}
             </div>
 
             <div className="pt-3 border-t border-slate-800 flex justify-between items-center">
-              <span className="text-[10px] text-slate-500 font-medium">EduCenter Cloud Utility</span>
+              <span className="text-[10px] text-slate-500 font-medium">Manara Cloud Utility</span>
               <button
                 type="button"
                 onClick={() => setShowFirebaseHelp(false)}

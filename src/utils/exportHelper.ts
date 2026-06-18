@@ -60,7 +60,7 @@ export function exportToExcel(title: string, headers: string[], rows: any[][], f
   <body>
     <div class="title-container">
       <div class="title">${title}</div>
-      <div class="meta">تاريخ التصدير: ${currentDateStr} • نظام إدارة السنتر التعليمي</div>
+      <div class="meta">تاريخ التصدير: ${currentDateStr} • <a href="https://wa.me/201031123461" target="_blank" style="text-decoration: none; color: inherit;">Manara by Graphiqa</a></div>
     </div>
     <table>
       <thead>
@@ -322,7 +322,7 @@ export function exportToPDF(
               <div style="display: flex; align-items: center;">
                 ${logoHtml}
                 <div class="center-info">
-                  <h1 class="center-name">${centerSettings?.name || 'السنتر التعليمي'}</h1>
+                  <h1 class="center-name">${centerSettings?.name || 'Manara'}</h1>
                   <p class="center-details">
                     📍 العنوان: ${centerSettings?.address || 'غير محدد'}<br/>
                     📞 الهاتف: ${centerSettings?.phone || 'غير محدد'}
@@ -331,7 +331,7 @@ export function exportToPDF(
               </div>
             </td>
             <td class="header-cell report-meta" style="width: 40%; text-align: left;">
-              <h2 class="report-title-label">نظام إدارة السنتـر التعليمي الذكي</h2>
+              <h2 class="report-title-label"><a href="https://wa.me/201031123461" target="_blank" style="text-decoration: none; color: inherit;">Manara by Graphiqa</a></h2>
               <p class="report-date">تاريخ ووقت التحضير: <strong style="color:#0f172a;">${currentDateStr}</strong></p>
             </td>
           </tr>

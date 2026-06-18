@@ -145,7 +145,7 @@ const initialMockData: AppData = {
       timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
       action: "تهيئة النظام",
       category: "system",
-      details: "تم تشغيل نظام إدارة السنتر التعليمي للمرة الأولى بنجاح.",
+      details: "تم تشغيل نظام Manara للمرة الأولى بنجاح.",
       operator: "المدير العام"
     }
   ],

@@ -103,16 +103,16 @@ export default function OnboardingScreen({ onSave, initialSettings, onClose }: O
           </div>
 
           <span className="text-[10px] bg-indigo-500/10 text-indigo-400 font-bold px-3 py-1 rounded-full border border-indigo-500/25 mb-2">
-            {initialSettings?.initialized ? "تعديل تفضيلات وبيانات السنتر" : "مرحباً بك في EduCenter Pro"}
+            {initialSettings?.initialized ? "تعديل تفضيلات وبيانات السنتر" : "مرحباً بك في Manara"}
           </span>
 
           <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight leading-snug">
-            {initialSettings?.initialized ? "إعدادات وهوية السنتر التعليمي" : "إعداد الهوية للسنتر التعليمي"}
+            {initialSettings?.initialized ? "إعدادات وهوية Manara" : "إعداد الهوية لـ Manara"}
           </h2>
           <p className="text-slate-400 text-xs mt-1.5 max-w-sm font-semibold mx-auto leading-relaxed">
             {initialSettings?.initialized 
               ? "قم بتحديث الهوية، اللوجو السنوي، ورقم المرور السري لحماية وتأمين النظام بالكامل ومزامنته سحابياً." 
-              : "أهلاً بك! يرجى تهيئة معلومات السنتر التعليمي الخاص بك لتخصيص كشوفات حضور الطلاب، إيصالات الدفع، وطباعة الأكواد فوراً."
+              : "أهلاً بك! يرجى تهيئة معلومات Manara الخاص بك لتخصيص كشوفات حضور الطلاب، إيصالات الدفع، وطباعة الأكواد فوراً."
             }
           </p>
         </div>
@@ -121,7 +121,7 @@ export default function OnboardingScreen({ onSave, initialSettings, onClose }: O
           {/* Center Name */}
           <div>
             <label className="block text-slate-300 text-xs font-bold mb-2">
-              اسم السنتر التعليمي <span className="text-rose-500">*</span>
+              اسم نظام Manara <span className="text-rose-500">*</span>
             </label>
             <div className="relative">
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
@@ -130,7 +130,7 @@ export default function OnboardingScreen({ onSave, initialSettings, onClose }: O
               <input
                 type="text"
                 required
-                placeholder="مثال: سنتر الأوائل التعليمي، أكاديمية المتفوقين"
+                placeholder="مثال: Manara by Graphiqa"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="w-full bg-slate-950/80 border border-slate-800 text-white rounded-xl pr-10 pl-4 py-3 text-xs font-bold placeholder-slate-500 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition"
@@ -183,7 +183,7 @@ export default function OnboardingScreen({ onSave, initialSettings, onClose }: O
             <div>
               <label className="block text-slate-300 text-xs font-bold mb-2 flex items-center gap-1.5">
                 <Image className="w-4 h-4 text-indigo-400" />
-                <span>لوجو السنتر التعليمي (اختياري)</span>
+                <span>لوجو شعار Manara (اختياري)</span>
               </label>
               <div className="flex items-center gap-3">
                 <label className="bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 font-bold px-3 py-2.5 rounded-xl text-[11px] text-center cursor-pointer transition border border-indigo-500/30 block flex-1">
@@ -290,6 +290,18 @@ export default function OnboardingScreen({ onSave, initialSettings, onClose }: O
           </button>
         </form>
       </motion.div>
+
+      {/* Global Footer */}
+      <div className="fixed bottom-4 pb-2 left-0 right-0 flex justify-center text-xs z-50">
+        <a
+          href="https://wa.me/201031123461"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-slate-500 hover:text-indigo-400 font-bold transition-colors select-none block"
+        >
+          Manara by Graphiqa
+        </a>
+      </div>
     </div>
   );
 }

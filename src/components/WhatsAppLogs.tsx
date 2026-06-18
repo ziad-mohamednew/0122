@@ -40,7 +40,7 @@ export default function WhatsAppLogs({
 
   // Test form state
   const [testPhone, setTestPhone] = useState('');
-  const [testText, setTestText] = useState('السلام عليكم.. هذه رسالة تجريبية لتأكيد عمل بوابة واتساب بالسنتر التعليمي بنجاح 🎲');
+  const [testText, setTestText] = useState('السلام عليكم.. هذه رسالة تجريبية لتأكيد عمل بوابة واتساب لـ Manara بنجاح 🎲');
   const [isSendingTest, setIsSendingTest] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string; id?: string } | null>(null);
 

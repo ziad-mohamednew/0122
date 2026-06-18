@@ -260,7 +260,8 @@ export default function PaymentsList({
 
             <div class="footer font-semibold" style="font-size: 10px; line-height: 1.4; color: #64748b; border-top: 1px solid #f1f5f9; padding-top: 12px; margin-top: 15px;">
               نشكركم لثقتكم بنا • تم قيد النقدية سحابياً بنجاح<br/>
-              <b>${centerSettings?.name || 'مركزنا التعليمي'}</b>
+              <b>${centerSettings?.name || 'Manara'}</b><br/>
+              <a href="https://wa.me/201031123461" target="_blank" style="text-decoration: none; color: inherit;">Manara by Graphiqa</a>
             </div>
           </div>
           <script>
@@ -398,7 +399,7 @@ export default function PaymentsList({
 
                         <a 
                           href={`https://wa.me/2${s.parentPhone}?text=${encodeURIComponent(
-                            `أولياء الأمور الأفاضل بخصوص الطالب(ة): ${s.name} ( كود: ${s.code} ). نود تذكيركم بلطف من إدارة السنتر التعليمي بضرورة سداد الرسوم المتأخرة للمجموعات بقيمة ${Math.abs(s.balance)} جنيه مصري. شاكرين جداً تفهمكم ودعمكم الدائم لنا.`
+                            `أولياء الأمور الأفاضل بخصوص الطالب(ة): ${s.name} ( كود: ${s.code} ). نود تذكيركم بلطف من إدارة Manara بضرورة سداد الرسوم المتأخرة للمجموعات بقيمة ${Math.abs(s.balance)} جنيه مصري. شاكرين جداً تفهمكم ودعمكم الدائم لنا.`
                           )}`}
                           target="_blank"
                           rel="noreferrer"
