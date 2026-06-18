@@ -318,20 +318,45 @@ export default function App() {
       const nowStr = new Date().toLocaleString('ar-EG', { hour12: true });
       setLastBackupTime(nowStr);
       
+      // Handling 3-day notification log cleanup
+      let newCenterSettings = { ...(state.centerSettings || { name: '', address: '', phone: '', initialized: false }) } as CenterSettings;
+      let newNotifications = [...(state.notifications || [])];
+      let newAuditLogs = [...state.auditLogs];
+
+      const checkTime = Date.now();
+      const lastClear = newCenterSettings.lastNotificationClearTimestamp || 0;
+      
+      // Every 3 days (3 * 24 * 60 * 60 * 1000 = 259200000 ms)
+      if (checkTime - lastClear >= 259200000) {
+        newNotifications = [];
+        newCenterSettings.lastNotificationClearTimestamp = checkTime;
+        
+        newAuditLogs.unshift({
+          id: `audit-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
+          timestamp: new Date().toISOString(),
+          action: "مسح سجل الإشعارات",
+          category: 'system',
+          details: "تم مسح سجل الإشعارات دورياً (كل 3 أيام) لتخفيف مساحة النظام، وتمت العملية فور انتهاء النسخ الاحتياطي.",
+          operator: "النظام"
+        });
+      }
+
       // Push system audit trail log node
-      const newAuditLog: AuditLog = {
-        id: `audit-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
+      newAuditLogs.unshift({
+        id: `audit-${Date.now()}-${Math.floor(Math.random() * 1000000) + 1}`,
         timestamp: new Date().toISOString(),
         action: "تم تصدير نسخة احتياطية يومية",
         category: 'system',
         details: `تصدير ذكي لقاعدة السنتر لتاريخ اليوم بنجاح ${state.centerSettings?.backupDirectoryName ? `إلى المجلد: ${state.centerSettings.backupDirectoryName}` : 'عبر التحميل التلقائي بالجهاز'}`,
         operator: "المدير العام (نظام الحفظ)"
-      };
+      });
 
       handleStateChange({
         ...state,
-        auditLogs: [newAuditLog, ...state.auditLogs]
-      }, "إنشاء نسخة احتياطية يومية مؤمنة بنجاح", "system");
+        auditLogs: newAuditLogs,
+        centerSettings: newCenterSettings,
+        notifications: newNotifications
+      }, "إنشاء نسخة احتياطية يومية مؤمنة وتنفيذ الصيانة بنجاح", "system");
     }
     return written;
   };

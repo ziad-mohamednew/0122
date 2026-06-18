@@ -2,7 +2,9 @@ import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
-import * as admin from "firebase-admin";
+import { initializeApp, cert, getApps, applicationDefault } from "firebase-admin/app";
+import { getMessaging } from "firebase-admin/messaging";
+import { getDatabase } from "firebase-admin/database";
 
 dotenv.config();
 
@@ -17,10 +19,19 @@ let isFirebaseAdminInitialized = false;
 
 try {
   if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
-    admin.initializeApp({
-      credential: admin.credential.cert({
+    let rawKey = process.env.FIREBASE_PRIVATE_KEY;
+    if (!rawKey.includes("BEGIN PRIVATE KEY")) {
+       rawKey = "-----BEGIN PRIVATE KEY-----" + (rawKey.startsWith("\\n") || rawKey.startsWith("\n") ? "" : "\\n") + rawKey;
+       if (!rawKey.includes("END PRIVATE KEY")) {
+         rawKey = rawKey + (rawKey.endsWith("\\n") || rawKey.endsWith("\n") ? "" : "\\n") + "-----END PRIVATE KEY-----\\n";
+       }
+    }
+    const privateKeyFixed = rawKey.replace(/\\n/g, '\n');
+
+    initializeApp({
+      credential: cert({
         projectId: process.env.FIREBASE_PROJECT_ID,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+        privateKey: privateKeyFixed,
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
       }),
       databaseURL: "https://center-management-legislator-default-rtdb.europe-west1.firebasedatabase.app"
@@ -28,8 +39,10 @@ try {
     console.log("[Firebase Admin] Service Account credentials loaded and initialized successfully.");
     isFirebaseAdminInitialized = true;
   } else {
-    // Attempt application default credentials if running in a Google Cloud environment
-    admin.initializeApp();
+    initializeApp({
+      credential: applicationDefault(),
+      databaseURL: "https://center-management-legislator-default-rtdb.europe-west1.firebasedatabase.app"
+    });
     console.log("[Firebase Admin] Initialized with Application Default Credentials.");
     isFirebaseAdminInitialized = true;
   }
@@ -56,7 +69,7 @@ app.post("/api/fcm/send", async (req, res) => {
       return res.status(400).json({ success: false, error: "Missing title or body" });
     }
 
-    if (!isFirebaseAdminInitialized && !admin.apps.length) {
+    if (!isFirebaseAdminInitialized && !getApps().length) {
       console.warn("Simulating FCM Send: Firebase Admin SDK is not initialized. Notification would be sent to:", receiverId, "Role:", receiverRole);
       return res.json({ success: true, simulated: true, message: "Simulated send since Firebase Admin SDK is not initialized." });
     }
@@ -67,34 +80,36 @@ app.post("/api/fcm/send", async (req, res) => {
     let targetTokens: string[] = [];
 
     try {
-      const db = admin.database();
+      const db = getDatabase();
+      const usersSnapshot = await db.ref('users').once('value');
       
-      if (receiverId === "all") {
-        // Broadcast to all users
-        const usersSnapshot = await db.ref('users').once('value');
-        if (usersSnapshot.exists()) {
-          usersSnapshot.forEach(child => {
-            const userData = child.val();
-            if (userData && userData.fcmToken && userData.active !== false) {
-              // Target only specific roles if needed
-              if (receiverRole === 'all' || userData.role === receiverRole) {
-                 targetTokens.push(userData.fcmToken);
-              }
-            }
-          });
-        }
-      } else {
-        // Specific user - searching by receiverId (could be phone code or student code)
-        // Usually, receiverId maps to UID, but assuming we lookup by phone for parents
-        const usersSnapshot = await db.ref('users').orderByChild('phone').equalTo(receiverId).once('value');
-        if (usersSnapshot.exists()) {
-          usersSnapshot.forEach(child => {
-            const userData = child.val();
-             if (userData && userData.fcmToken && userData.active !== false) {
-                 targetTokens.push(userData.fcmToken);
+      if (usersSnapshot.exists()) {
+        usersSnapshot.forEach(child => {
+          const key = child.key || "";
+          const userData = child.val();
+          
+          if (userData && userData.fcmToken && userData.active !== false) {
+             if (receiverId === "all") {
+                // Broadcast to all users
+                if (receiverRole === 'all' || userData.role === receiverRole) {
+                   targetTokens.push(userData.fcmToken);
+                }
+             } else {
+                // Specific user - handle "user_..." format from the mobile app
+                const cleanReceiver = String(receiverId).replace(/\s+/g, "");
+                const isMatch = (
+                   key === cleanReceiver ||
+                   key === `user_${cleanReceiver}` ||
+                   key.includes(cleanReceiver) ||
+                   (userData.phone && String(userData.phone).replace(/\s+/g, "") === cleanReceiver)
+                );
+
+                if (isMatch) {
+                   targetTokens.push(userData.fcmToken);
+                }
              }
-          });
-        }
+          }
+        });
       }
     } catch (e: any) {
       console.error("[FCM Engine] Error fetching tokens from Realtime Database:", e.message);
@@ -105,7 +120,7 @@ app.post("/api/fcm/send", async (req, res) => {
       console.log(`[FCM Engine] No registered devices found for receiver: ${receiverId} (${receiverRole}). Simulated send.`);
       // If we want to use Topic messaging as fallback for 'all'
       if (receiverId === "all") {
-         targetTokens = []; // You could send to topic here using admin.messaging().send({topic: 'all', notification: ...})
+         targetTokens = []; // You could send to topic here using getMessaging().send({topic: 'all', notification: ...})
       } else {
          return res.json({
            success: true,
@@ -132,7 +147,7 @@ app.post("/api/fcm/send", async (req, res) => {
         tokens: targetTokens
       };
 
-      const response = await admin.messaging().sendEachForMulticast(fcmPayload);
+      const response = await getMessaging().sendEachForMulticast(fcmPayload);
       console.log(`[FCM Engine] Sent! Success count: ${response.successCount}, Failure count: ${response.failureCount}`);
       
       return res.json({

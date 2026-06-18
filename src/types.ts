@@ -80,6 +80,7 @@ export interface CenterSettings {
   password?: string; // Optional login/PIN lock password
   whatsappInstanceId?: string; // UltraMsg Instance ID
   whatsappToken?: string; // UltraMsg Instance Token
+  lastNotificationClearTimestamp?: number; // Tracks when notifications were last cleared
 }
 
 export interface Secretary {
