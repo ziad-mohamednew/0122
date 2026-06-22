@@ -113,9 +113,8 @@ export function exportToPDF(
     return;
   }
 
-  const logoHtml = centerSettings?.logoUrl 
-    ? `<img src="${centerSettings.logoUrl}" class="center-logo" alt="Center Logo" />`
-    : `<div class="logo-placeholder">🎓</div>`;
+  const logoUrl = centerSettings?.logoUrl || (window.location.origin + '/icon.png');
+  const logoHtml = `<img src="${logoUrl}" class="center-logo" alt="Center Logo" onerror="this.onerror=null; this.outerHTML='<div class=\\'logo-placeholder\\'>🎓</div>';" />`;
 
   const summaryHtml = summaryData && summaryData.length > 0
     ? `

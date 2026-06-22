@@ -1272,15 +1272,9 @@ ${gradeName}${tName}
         >
           {/* Custom logo or decorative lock */}
           <div className="flex flex-col items-center">
-            {state.centerSettings?.logoUrl ? (
-              <div className="w-20 h-20 border border-slate-800 rounded-3xl overflow-hidden bg-white mb-5 shadow-xl flex items-center justify-center p-1 font-sans">
-                <img src={state.centerSettings.logoUrl} alt="Logo" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
-              </div>
-            ) : (
-              <div className="w-16 h-16 bg-indigo-650 rounded-2xl flex items-center justify-center text-white text-2xl font-extrabold shadow-lg shadow-indigo-600/20 mb-5">
-                🔒
-              </div>
-            )}
+            <div className="w-24 h-24 border border-slate-800 rounded-3xl overflow-hidden bg-white mb-5 shadow-xl flex items-center justify-center p-2 font-sans relative">
+              <img src={state.centerSettings?.logoUrl || "/open.png"} alt="Logo" className="w-full h-full object-contain drop-shadow-sm" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement!.innerHTML = '<span class="text-3xl">🔒</span>'; }} />
+            </div>
 
             <span className="text-[10px] bg-indigo-500/10 text-indigo-400 font-bold px-3 py-1 rounded-full border border-indigo-500/25 mb-2">
               نظام السنتر مغلق ومُؤمّن
@@ -1367,9 +1361,9 @@ ${gradeName}${tName}
           <div className="absolute -bottom-12 -right-12 w-24 h-24 bg-rose-500/10 rounded-full blur-xl" />
 
           <div className="flex flex-col items-center">
-            {/* Pulsing Lock Icon */}
-            <div className="w-20 h-20 bg-indigo-600/10 border border-indigo-500/20 rounded-full flex items-center justify-center text-indigo-400 text-3xl shadow-xl shadow-indigo-600/5 mb-6 animate-pulse">
-              🔒
+            {/* Open Icon */}
+            <div className="w-24 h-24 bg-white border border-slate-200 rounded-3xl flex items-center justify-center shadow-xl mb-6 relative overflow-hidden animate-pulse">
+              <img src={state.centerSettings?.logoUrl || "/open.png"} alt="Open Logo" className="w-full h-full object-contain p-2" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement!.innerHTML = '<span class="text-3xl">🔒</span>'; }} />
             </div>
 
             <span className="text-[10px] bg-indigo-500/10 text-indigo-400 font-bold px-3 py-1 rounded-full border border-indigo-500/25 mb-3">
@@ -1442,14 +1436,8 @@ ${gradeName}${tName}
         {/* Brand Header */}
         <div className="p-5 border-b border-slate-800 bg-slate-950 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 overflow-hidden">
-            <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shrink-0">
-              {state.centerSettings?.logoUrl ? (
-                <img src={state.centerSettings.logoUrl} alt="Logo" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-              ) : (
-                <div className="w-full h-full bg-indigo-600 flex items-center justify-center font-extrabold text-white text-base">
-                  {state.centerSettings?.name ? state.centerSettings.name.slice(0, 2).toUpperCase() : 'ED'}
-                </div>
-              )}
+            <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shrink-0 bg-white">
+              <img src={state.centerSettings?.logoUrl || "/icon.png"} alt="Logo" className="w-full h-full object-contain p-0.5" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement!.innerHTML = `<div class="w-full h-full bg-indigo-600 flex items-center justify-center font-extrabold text-white text-xs">${state.centerSettings?.name ? state.centerSettings.name.slice(0, 2).toUpperCase() : 'ED'}</div>` }} />
             </div>
             <div className="truncate">
               <h2 className="font-bold text-xs text-white leading-tight truncate" title={state.centerSettings?.name || "Manara"}>
@@ -1645,14 +1633,8 @@ ${gradeName}${tName}
       {/* MOBILE HEADER BAR */}
       <header className="md:hidden bg-[#0F172A] text-slate-150 p-4 flex justify-between items-center border-b border-slate-800 shadow-md">
         <div className="flex items-center gap-2 overflow-hidden">
-          <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shrink-0">
-            {state.centerSettings?.logoUrl ? (
-              <img src={state.centerSettings.logoUrl} alt="Logo" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-            ) : (
-              <div className="w-full h-full bg-indigo-600 flex items-center justify-center text-white text-xs font-bold font-sans">
-                🏫
-              </div>
-            )}
+          <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shrink-0 bg-white">
+            <img src={state.centerSettings?.logoUrl || "/icon.png"} alt="Logo" className="w-full h-full object-contain p-0.5" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement!.innerHTML = '<div class="w-full h-full bg-indigo-600 flex items-center justify-center text-white text-xs font-bold font-sans">🏫</div>'; }} />
           </div>
           <span className="font-extrabold text-[#F8FAFC] text-sm truncate max-w-[185px]">
             {state.centerSettings?.name || "بوابة Manara"}

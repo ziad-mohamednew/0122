@@ -94,11 +94,11 @@ export default function OnboardingScreen({ onSave, initialSettings, onClose }: O
 
         <div className="flex flex-col items-center">
           {/* Logo badge */}
-          <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center text-white text-2xl font-extrabold shadow-lg shadow-indigo-600/20 mb-4 overflow-hidden font-sans">
+          <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center shadow-lg shadow-indigo-600/20 mb-4 overflow-hidden font-sans border border-slate-200 p-1">
             {logoUrl ? (
-              <img src={logoUrl} alt="Center Logo" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              <img src={logoUrl} alt="Center Logo" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
             ) : (
-              <span>ED</span>
+              <img src="/open.png" alt="Open Logo" className="w-full h-full object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement!.innerHTML = '<span class="text-3xl text-indigo-600 font-bold">ED</span>'; }} />
             )}
           </div>
 

@@ -226,7 +226,10 @@ export default function PaymentsList({
         </head>
         <body>
           <div class="receipt">
-            <div class="brand">${centerSettings?.name || 'إيصال تحصيل نقدية'}</div>
+            <div class="brand">
+              <img src="${centerSettings?.logoUrl || (window.location.origin + '/icon.png')}" alt="Logo" style="width: 48px; height: 48px; object-fit: contain; margin-bottom: 8px;" onerror="this.style.display='none'" /><br/>
+              ${centerSettings?.name || 'إيصال تحصيل نقدية'}
+            </div>
             <div class="subtitle">${centerSettings?.initialized ? ('هاتف: ' + centerSettings.phone + ' • ' + centerSettings.address) : 'سداد الرسوم والاشتراكات الدراسية'}</div>
             <div class="receipt-id">رقم الإيصال: ${payment.id}</div>
             

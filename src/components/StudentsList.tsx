@@ -279,7 +279,10 @@ export default function StudentsList({
           </head>
           <body>
             <div class="card">
-              <div class="header">${centerSettings?.name || 'Manara'}</div>
+              <div class="header">
+                 <img src="${centerSettings?.logoUrl || (window.location.origin + '/icon.png')}" alt="Logo" style="width: 48px; height: 48px; object-fit: contain; margin-bottom: 8px;" onerror="this.style.display='none'" /><br/>
+                 ${centerSettings?.name || 'Manara'}
+              </div>
               <div class="name">${activeCardStudent?.name}</div>
               <div class="code">CODE: ${activeCardStudent?.code}</div>
               <div class="qr-container">
