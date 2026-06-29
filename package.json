@@ -43,8 +43,8 @@
     "vite": "^6.2.3"
   },
   "build": {
-    "appId": "com.educenter.app",
-    "productName": "بوابة السنتر التعليمي",
+    "appId": "com.manara.app",
+    "productName": "Manara by Graphiqa",
     "directories": {
       "output": "dist-desktop"
     },
@@ -52,7 +52,20 @@
       "target": [
         "nsis"
       ],
-      "icon": "assets/icon.png"
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "installerHeader": "assets/header.bmp",
+      "installerHeaderIcon": "assets/icon.ico",
+      "installerSidebar": "assets/sidebar.bmp",
+      "uninstallerSidebar": "assets/sidebar.bmp",
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "Manara by Graphiqa"
     },
     "files": [
       "dist/**/*",

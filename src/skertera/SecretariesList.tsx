@@ -18,7 +18,7 @@ import {
   Check
 } from 'lucide-react';
 import { Secretary, Teacher } from '../types';
-import { exportToExcel, exportToPDF } from '../utils/exportHelper';
+import { exportToExcel, exportToPDF } from './utils/exportHelper';
 
 interface SecretariesListProps {
   secretaries: Secretary[];

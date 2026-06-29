@@ -1,4 +1,4 @@
-import { CenterSettings } from '../types';
+import { CenterSettings } from '../../types';
 
 /**
  * Exports a dataset as a high-quality, styled Excel spreadsheet (.xls)

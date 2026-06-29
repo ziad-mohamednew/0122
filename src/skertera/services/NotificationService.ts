@@ -1,5 +1,5 @@
-import { AppNotification } from '../types';
-import { getLocalData, saveAppData } from '../firebase';
+import { AppNotification } from '../../types';
+import { getLocalData, saveAppData } from '../../firebase';
 
 /**
  * Ensures a single source of truth for sending notifications within the Center Management app.

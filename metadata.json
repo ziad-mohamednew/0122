@@ -1,5 +1,5 @@
 {
-  "name": "Center Management System",
+  "name": "Manara by Graphiqa",
   "description": "نظام لإدارة السنتر التعليمي يشمل لوحة تحكم للطلاب والمجموعات والحضور بـ QR والمدفوعات والمزامنة اللحظية.",
   "requestFramePermissions": ["camera"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

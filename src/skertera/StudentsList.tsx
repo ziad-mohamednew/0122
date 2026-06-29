@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import { Student, Group, Teacher, CenterSettings } from '../types';
-import { exportToExcel, exportToPDF } from '../utils/exportHelper';
+import { exportToExcel, exportToPDF } from './utils/exportHelper';
 
 interface StudentsListProps {
   students: Student[];

@@ -1,0 +1,9 @@
+/* Import Tailwind via CDN */
+@import "https://cdn.tailwindcss.com";
+
+body {
+    background-color: #0f172a; /* slate-900 */
+    color: white;
+    font-family: sans-serif;
+    text-align: right;
+}

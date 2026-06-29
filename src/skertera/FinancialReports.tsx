@@ -20,7 +20,7 @@ import {
   UserCheck
 } from 'lucide-react';
 import { Payment, Teacher, Student, Secretary, Expense, CenterSettings } from '../types';
-import { exportToExcel, exportToPDF } from '../utils/exportHelper';
+import { exportToExcel, exportToPDF } from './utils/exportHelper';
 
 interface FinancialReportsProps {
   payments: Payment[];
@@ -83,6 +83,7 @@ export default function FinancialReports({
   const [expenseDate, setExpenseDate] = useState(todayStr);
   const [expenseCategory, setExpenseCategory] = useState('utilities');
   const [expenseNotes, setExpenseNotes] = useState('');
+  const [expenseTeacherId, setExpenseTeacherId] = useState('');
   const [expenseError, setExpenseError] = useState('');
 
   // Toast / Copy feedback
@@ -109,6 +110,7 @@ export default function FinancialReports({
       date: expenseDate,
       category: expenseCategory,
       notes: expenseNotes.trim() || undefined,
+      teacherId: expenseTeacherId || undefined,
       timestamp: new Date().toISOString()
     };
 
@@ -120,6 +122,7 @@ export default function FinancialReports({
     setExpenseDate(todayStr);
     setExpenseCategory('utilities');
     setExpenseNotes('');
+    setExpenseTeacherId('');
   };
 
   // Helper date utility to verify if transaction falls in chosen timeframe
@@ -557,6 +560,20 @@ export default function FinancialReports({
                 />
               </div>
 
+              <div>
+                <label className="block text-slate-600 text-xs font-bold mb-1.5">ربط بالمدرس (اختياري)</label>
+                <select
+                  value={expenseTeacherId}
+                  onChange={e => setExpenseTeacherId(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-hidden text-slate-700 font-bold"
+                >
+                  <option value="">-- مصروف عام للسنتر --</option>
+                  {teachers.map(t => (
+                    <option key={t.id} value={t.id}>{t.name} ({t.subject})</option>
+                  ))}
+                </select>
+              </div>
+
               {expenseError && (
                 <div className="p-3 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl text-xs font-semibold">
                   {expenseError}
@@ -599,7 +616,14 @@ export default function FinancialReports({
                       {expenses.map(e => (
                         <tr key={e.id} className="border-b border-slate-50 hover:bg-slate-50/50">
                           <td className="py-2.5 px-3 font-mono text-slate-500">{e.date}</td>
-                          <td className="py-2.5 px-3 font-bold text-slate-800">{e.title}</td>
+                          <td className="py-2.5 px-3 font-bold text-slate-800">
+                            {e.title}
+                            {e.teacherId && (
+                              <span className="block text-[10px] text-indigo-500 font-normal mt-0.5">
+                                مرتبطة بـ: {teachers.find(t => t.id === e.teacherId)?.name || 'مدرس غير موجود'}
+                              </span>
+                            )}
+                          </td>
                           <td className="py-2.5 px-3">
                             <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
                               e.category === 'rent' ? 'bg-orange-50 text-orange-600' :

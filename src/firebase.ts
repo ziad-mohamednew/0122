@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getDatabase, ref, set, push, onValue, get } from 'firebase/database';
-import { Student, Teacher, Group, Payment, AttendanceRecord, AuditLog, AppData, CenterSettings, Secretary, Expense, WhatsAppLog, AppNotification } from './types';
+import { Student, Teacher, Group, Payment, AttendanceRecord, AuditLog, AppData, CenterSettings, Secretary, Expense, WhatsAppLog, AppNotification, Announcement } from './types';
 
 // Realtime Database URL provided by the user
 const DATABASE_URL = "https://center-management-legislator-default-rtdb.europe-west1.firebasedatabase.app/";
@@ -156,7 +156,7 @@ const initialMockData: AppData = {
 const STORAGE_KEY = "educational_center_dashboard_data";
 
 // Helper to sanitize arrays (converting sparse objects to arrays, and removing nulls)
-function sanitizeArray<T extends { id?: string }>(arr: any): T[] {
+function sanitizeArray<T extends { id?: string, notificationId?: string }>(arr: any): T[] {
   if (!arr) return [];
   const rawList = Array.isArray(arr) ? arr : Object.values(arr);
   const filtered = rawList.filter((item: any) => item !== null && typeof item === 'object') as T[];
@@ -166,9 +166,10 @@ function sanitizeArray<T extends { id?: string }>(arr: any): T[] {
   const uniqueList: T[] = [];
   
   for (const item of filtered) {
-    if (item.id) {
-      if (!seenIds.has(item.id)) {
-        seenIds.add(item.id);
+    const ident = item.id || item.notificationId;
+    if (ident) {
+      if (!seenIds.has(ident)) {
+        seenIds.add(ident);
         uniqueList.push(item);
       }
     } else {
@@ -210,6 +211,7 @@ export function sanitizeData(data: any): AppData {
     expenses: sanitizeArray<Expense>(data.expenses),
     whatsAppLogs: sanitizeArray<WhatsAppLog>(data.whatsAppLogs),
     notifications: sanitizeArray<AppNotification>(data.notifications),
+    announcements: sanitizeArray<Announcement>(data.announcements),
     centerSettings: data.centerSettings ? {
       name: String(data.centerSettings.name || ''),
       address: String(data.centerSettings.address || ''),

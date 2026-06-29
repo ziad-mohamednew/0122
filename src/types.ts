@@ -32,6 +32,7 @@ export interface Group {
   subject: string;
   teacherId: string;
   price: number; // Price per month or session
+  hall?: string; // Target hall/room
   schedules: { day: string; time: string }[]; // Flex schedules
   createdAt: string;
 }
@@ -111,6 +112,7 @@ export interface Expense {
   notes?: string;
   timestamp: string;
   operatorName?: string;
+  teacherId?: string; // Optional linking to teacher
 }
 
 export interface WhatsAppLog {
@@ -137,6 +139,21 @@ export interface AppNotification {
   eventId?: string; // For idempotency mapping
 }
 
+export type TargetAudience = 'students' | 'teachers' | 'parents' | 'secretaries' | 'all';
+
+export interface Announcement {
+  id: string;
+  title: string;
+  content?: string;
+  imageUrl?: string;
+  actionText?: string;
+  actionUrl?: string;
+  targetAudience: TargetAudience;
+  date: string;
+  active: boolean;
+  createdBy: string;
+}
+
 export interface PushSubscriber {
   uid: string;
   role: 'parent' | 'student' | 'teacher';
@@ -158,4 +175,5 @@ export interface AppData {
   expenses?: Expense[];
   whatsAppLogs?: WhatsAppLog[];
   notifications?: AppNotification[];
+  announcements?: Announcement[];
 }

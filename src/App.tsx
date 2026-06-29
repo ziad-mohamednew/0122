@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   LayoutDashboard, 
@@ -28,30 +28,42 @@ import {
   Calculator,
   MessageSquare,
   Sun,
-  Moon
+  Moon,
+  Megaphone
 } from 'lucide-react';
 
 // Import Types
-import { Student, Teacher, Group, Payment, AttendanceRecord, AuditLog, AppData, CenterSettings, Secretary, Expense, WhatsAppLog } from './types';
+import { Student, Teacher, Group, Payment, AttendanceRecord, AuditLog, AppData, CenterSettings, Secretary, Expense, WhatsAppLog, AppNotification, Announcement } from './types';
 
 // Import Firebase API Synchronizer
 import { getLocalData, saveAppData, setupFirebaseListener, isFirebaseSyncing, testFirebaseConnection } from './firebase';
 
 // Import Tabs Components
-import Dashboard from './components/Dashboard';
-import StudentsList from './components/StudentsList';
-import GroupsList from './components/GroupsList';
-import PaymentsList from './components/PaymentsList';
-import AttendanceSheet from './components/AttendanceSheet';
-import AuditTrails from './components/AuditTrails';
-import OnboardingScreen from './components/OnboardingScreen';
-import ConfirmationModal from './components/ConfirmationModal';
-import SecretariesList from './components/SecretariesList';
-import FinancialReports from './components/FinancialReports';
-import WhatsAppLogs from './components/WhatsAppLogs';
-import PasswordManager from './components/PasswordManager';
+import Dashboard from './skertera/Dashboard';
+import StudentsList from './skertera/StudentsList';
+import GroupsList from './skertera/GroupsList';
+import PaymentsList from './skertera/PaymentsList';
+import AttendanceSheet from './skertera/AttendanceSheet';
+import AuditTrails from './skertera/AuditTrails';
+import OnboardingScreen from './skertera/OnboardingScreen';
+import ConfirmationModal from './skertera/ConfirmationModal';
+import SecretariesList from './skertera/SecretariesList';
+import FinancialReports from './skertera/FinancialReports';
+import WhatsAppLogs from './skertera/WhatsAppLogs';
+import PasswordManager from './skertera/PasswordManager';
+import AnnouncementsList from './skertera/AnnouncementsList';
+import TeachersList from './skertera/TeachersList';
 
 export default function App() {
+  const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
   const [activeTab, setActiveTab] = useState('dashboard');
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     try {
@@ -195,9 +207,10 @@ export default function App() {
     if (currentSecretary) {
       const allowed = 
         activeTab === 'dashboard' ||
+        activeTab === 'payments' ||
         (activeTab === 'students' && currentSecretary.permissions?.students) ||
+        (activeTab === 'teachers' && currentSecretary.permissions?.groups) ||
         (activeTab === 'groups' && currentSecretary.permissions?.groups) ||
-        (activeTab === 'payments' && currentSecretary.permissions?.payments) ||
         (activeTab === 'attendance' && currentSecretary.permissions?.attendance) ||
         (activeTab === 'whatsapp_logs' && currentSecretary.permissions?.logs) ||
         (activeTab === 'passwords' && currentSecretary.permissions?.logs) ||
@@ -563,6 +576,25 @@ export default function App() {
       ...state,
       secretaries: (state.secretaries || []).filter(s => s.id !== secId)
     }, `حظر وحذف حساب السكرتير ومساعد السنتر: ${target.name}`, 'system');
+  };
+
+  // Announcements Operations
+  const handleAddAnnouncement = (ann: Announcement) => {
+    const updatedAnn = [...(state.announcements || []), ann];
+    handleStateChange({
+      ...state,
+      announcements: updatedAnn
+    }, `نشر إعلان جديد بعنوان: ${ann.title}`, 'system');
+  };
+
+  const handleDeleteAnnouncement = (annId: string) => {
+    const target = (state.announcements || []).find(a => a.id === annId);
+    if (!target) return;
+
+    handleStateChange({
+      ...state,
+      announcements: (state.announcements || []).filter(a => a.id !== annId)
+    }, `حذف إعلان: ${target.title}`, 'system');
   };
 
   // Record Payment receipt
@@ -1241,20 +1273,96 @@ ${gradeName}${tName}
   const navigationItems = [
     { id: 'dashboard', label: 'لوحة التحكم', icon: LayoutDashboard },
     (!currentSecretary || currentSecretary.permissions?.students) && { id: 'students', label: 'ملفات الطلاب', icon: Users },
-    (!currentSecretary || currentSecretary.permissions?.groups) && { id: 'groups', label: 'المجموعات والمعلمين', icon: Layers },
-    (!currentSecretary || currentSecretary.permissions?.payments) && { id: 'payments', label: 'الحسابات والفوترة', icon: DollarSign },
+    (!currentSecretary || currentSecretary.permissions?.groups) && { id: 'teachers', label: 'ملفات المعلمين وتقاريرهم', icon: Users },
+    (!currentSecretary || currentSecretary.permissions?.groups) && { id: 'groups', label: 'إدارة المجموعات', icon: Layers },
+    { id: 'payments', label: 'الحسابات والفوترة', icon: DollarSign },
     (!currentSecretary || currentSecretary.permissions?.payments) && { id: 'financials', label: 'كشف الحسابات', icon: Calculator },
     (!currentSecretary || currentSecretary.permissions?.attendance) && { id: 'attendance', label: 'الحضور والغياب (QR)', icon: UserCheck },
     (!currentSecretary || currentSecretary.permissions?.logs) && { id: 'whatsapp_logs', label: 'بوابة وسجلات واتساب', icon: MessageSquare },
     (!currentSecretary || currentSecretary.permissions?.logs) && { id: 'passwords', label: 'كلمات المرور', icon: Lock },
+    (!currentSecretary) && { id: 'announcements', label: 'الإعلانات', icon: Megaphone },
     (!currentSecretary) && { id: 'secretaries', label: 'إدارة السكرتارية', icon: UserCog },
     (!currentSecretary || currentSecretary.permissions?.logs) && { id: 'audit', label: 'النسخ والأمن', icon: ShieldAlert },
   ].filter(Boolean) as { id: string; label: string; icon: any }[];
+
+  // Secretary Data Filtering Logic
+  const filteredTeachers = useMemo(() => {
+    if (!currentSecretary) return state.teachers;
+    if (currentSecretary.workspaceType === 'teacher' && currentSecretary.teacherId) {
+      return state.teachers.filter(t => t.id === currentSecretary.teacherId);
+    }
+    if (currentSecretary.workspaceType === 'hall' && currentSecretary.hallName) {
+      const hallGroups = state.groups.filter(g => g.hall === currentSecretary.hallName);
+      const hallTeacherIds = new Set(hallGroups.map(g => g.teacherId));
+      return state.teachers.filter(t => hallTeacherIds.has(t.id));
+    }
+    return state.teachers;
+  }, [state.teachers, state.groups, currentSecretary]);
+
+  const filteredGroups = useMemo(() => {
+    if (!currentSecretary) return state.groups;
+    if (currentSecretary.workspaceType === 'teacher' && currentSecretary.teacherId) {
+      return state.groups.filter(g => g.teacherId === currentSecretary.teacherId);
+    }
+    if (currentSecretary.workspaceType === 'hall' && currentSecretary.hallName) {
+      return state.groups.filter(g => g.hall === currentSecretary.hallName);
+    }
+    return state.groups;
+  }, [state.groups, currentSecretary]);
+
+  const filteredStudents = useMemo(() => {
+    if (!currentSecretary) return state.students;
+    const allowedGroupIds = new Set(filteredGroups.map(g => g.id));
+    return state.students.filter(s => s.groupIds && s.groupIds.some(gid => allowedGroupIds.has(gid)));
+  }, [state.students, filteredGroups, currentSecretary]);
+
+  const filteredPayments = useMemo(() => {
+    if (!currentSecretary) return state.payments;
+    const allowedTeacherIds = new Set(filteredTeachers.map(t => t.id));
+    return state.payments.filter(p => p.teacherIds && p.teacherIds.some(tid => allowedTeacherIds.has(tid)));
+  }, [state.payments, filteredTeachers, currentSecretary]);
 
   const handleNavigate = (tabId: string) => {
     setActiveTab(tabId);
     setIsMobileMenuOpen(false);
   };
+
+  if (showSplash) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center font-sans relative overflow-hidden" dir="rtl">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(99,102,241,0.1),transparent_50%)]" />
+        <motion.div
+           initial={{ opacity: 0, scale: 0.9, y: 10 }}
+           animate={{ opacity: 1, scale: 1, y: 0 }}
+           transition={{ duration: 0.6, ease: "easeOut" }}
+           className="relative z-10 flex flex-col items-center"
+        >
+          <div className="w-28 h-28 bg-white rounded-[2rem] shadow-2xl p-2.5 mb-6 relative overflow-hidden shadow-indigo-500/20">
+             <img src="/open.png" alt="Open App" className="w-full h-full object-contain" />
+          </div>
+          <h1 className="text-[#F8FAFC] text-3xl font-extrabold tracking-tight mb-2">Manara</h1>
+          <p className="text-slate-400 font-medium text-sm">نظام الإدارة التعليمية المتكامل</p>
+          
+          <div className="mt-10 flex gap-2 opacity-80">
+            <motion.div className="w-2.5 h-2.5 rounded-full bg-indigo-500" animate={{ scale: [1, 1.5, 1], opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1.2, delay: 0 }} />
+            <motion.div className="w-2.5 h-2.5 rounded-full bg-indigo-500" animate={{ scale: [1, 1.5, 1], opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1.2, delay: 0.2 }} />
+            <motion.div className="w-2.5 h-2.5 rounded-full bg-indigo-500" animate={{ scale: [1, 1.5, 1], opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1.2, delay: 0.4 }} />
+          </div>
+        </motion.div>
+        
+        <div className="absolute bottom-6 left-0 right-0 flex justify-center text-xs z-50">
+          <a
+            href="https://wa.me/201031123461"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-slate-500 hover:text-indigo-400 font-bold transition-colors select-none"
+          >
+            Manara by Graphiqa
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   if (!state.centerSettings || !state.centerSettings.initialized) {
     return <OnboardingScreen onSave={handleSaveCenterSettings} initialSettings={state.centerSettings} />;
@@ -1745,10 +1853,10 @@ ${gradeName}${tName}
           >
             {activeTab === 'dashboard' && (
               <Dashboard 
-                students={state.students}
-                groups={state.groups}
-                teachers={state.teachers}
-                payments={state.payments}
+                students={filteredStudents}
+                groups={filteredGroups}
+                teachers={filteredTeachers}
+                payments={filteredPayments}
                 onNavigate={handleNavigate}
                 currentSecretary={currentSecretary}
               />
@@ -1756,9 +1864,9 @@ ${gradeName}${tName}
 
             {activeTab === 'students' && (
               <StudentsList 
-                students={state.students}
-                groups={state.groups}
-                teachers={state.teachers}
+                students={filteredStudents}
+                groups={filteredGroups}
+                teachers={filteredTeachers}
                 centerSettings={state.centerSettings}
                 onSaveStudent={handleSaveStudent}
                 onDeleteStudent={handleDeleteStudent}
@@ -1767,11 +1875,20 @@ ${gradeName}${tName}
               />
             )}
 
+            {activeTab === 'teachers' && (
+              <TeachersList 
+                teachers={filteredTeachers}
+                groups={filteredGroups}
+                students={filteredStudents}
+                settings={state.centerSettings || { centerName: 'السنتر', password: '', passcodes: {}, notificationMode: 'none', defaultSessionPrice: 0 }}
+              />
+            )}
+
             {activeTab === 'groups' && (
               <GroupsList 
-                groups={state.groups}
-                teachers={state.teachers}
-                students={state.students}
+                groups={filteredGroups}
+                teachers={filteredTeachers}
+                students={filteredStudents}
                 onSaveGroup={handleSaveGroup}
                 onDeleteGroup={handleDeleteGroup}
                 onSaveTeacher={handleSaveTeacher}
@@ -1782,10 +1899,10 @@ ${gradeName}${tName}
 
             {activeTab === 'payments' && (
               <PaymentsList 
-                payments={state.payments}
-                students={state.students}
-                teachers={state.teachers}
-                groups={state.groups}
+                payments={filteredPayments}
+                students={filteredStudents}
+                teachers={filteredTeachers}
+                groups={filteredGroups}
                 centerSettings={state.centerSettings}
                 onAddPayment={handleAddPayment}
                 onRunAutoBilling={handleRunAutoBilling}
@@ -1795,9 +1912,9 @@ ${gradeName}${tName}
 
             {activeTab === 'attendance' && (
               <AttendanceSheet 
-                students={state.students}
-                groups={state.groups}
-                teachers={state.teachers}
+                students={filteredStudents}
+                groups={filteredGroups}
+                teachers={filteredTeachers}
                 attendance={state.attendance}
                 onSaveAttendance={handleSaveAttendance}
                 onUpdateStudentGroups={handleUpdateStudentGroups}
@@ -1807,9 +1924,9 @@ ${gradeName}${tName}
 
             {activeTab === 'financials' && (
               <FinancialReports 
-                payments={state.payments}
-                teachers={state.teachers}
-                students={state.students}
+                payments={filteredPayments}
+                teachers={filteredTeachers}
+                students={filteredStudents}
                 secretaries={state.secretaries || []}
                 expenses={state.expenses || []}
                 centerSettings={state.centerSettings}
@@ -1838,6 +1955,15 @@ ${gradeName}${tName}
                 onResendMessage={handleResendWhatsAppMessage}
                 onClearLogs={handleClearWhatsAppLogs}
                 onSendDirectTest={handleSendDirectTest}
+              />
+            )}
+
+            {activeTab === 'announcements' && (
+              <AnnouncementsList
+                announcements={state.announcements || []}
+                onAddAnnouncement={handleAddAnnouncement}
+                onDeleteAnnouncement={handleDeleteAnnouncement}
+                currentOperator={currentSecretary}
               />
             )}
 

@@ -15,7 +15,7 @@ import {
   Printer
 } from 'lucide-react';
 import { Group, Teacher, Student } from '../types';
-import { exportToExcel, exportToPDF } from '../utils/exportHelper';
+import { exportToExcel, exportToPDF } from './utils/exportHelper';
 
 interface GroupsListProps {
   groups: Group[];
@@ -66,6 +66,7 @@ export default function GroupsList({
   const [groupSubject, setGroupSubject] = useState('');
   const [linkedTeacherId, setLinkedTeacherId] = useState('');
   const [groupPrice, setGroupPrice] = useState(150);
+  const [groupHall, setGroupHall] = useState('');
   const [schedules, setSchedules] = useState<{ day: string; time: string }[]>([
     { day: "السبت", time: "16:00" }
   ]);
@@ -141,6 +142,7 @@ export default function GroupsList({
       subject: groupSubject,
       teacherId: linkedTeacherId,
       price: Number(groupPrice),
+      hall: groupHall,
       schedules: schedules,
       createdAt: new Date().toISOString()
     };
@@ -152,6 +154,7 @@ export default function GroupsList({
     setGroupSubject('');
     setLinkedTeacherId('');
     setGroupPrice(150);
+    setGroupHall('');
     setSchedules([{ day: "السبت", time: "16:00" }]);
   };
 
@@ -542,6 +545,17 @@ export default function GroupsList({
               </div>
 
               <div>
+                <label className="block text-slate-600 dark:text-slate-350 text-xs font-semibold mb-1.5">القاعة / الفصل الدراسي (اختياري)</label>
+                <input 
+                  type="text" 
+                  value={groupHall} 
+                  onChange={(e) => setGroupHall(e.target.value)} 
+                  placeholder="مثال: القاعة الكبرى، قاعة 1"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-700 dark:text-slate-200 text-sm focus:outline-hidden focus:border-indigo-500 transition-colors"
+                />
+              </div>
+
+              <div>
                 <label className="block text-slate-600 dark:text-slate-355 text-xs font-semibold mb-1.5">المعلم المدرس للجروب</label>
                 <select 
                   value={linkedTeacherId} 
@@ -673,9 +687,16 @@ export default function GroupsList({
 
                         <div className="mt-3">
                           <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">{g.name}</h4>
-                          <span className="text-slate-500 dark:text-slate-400 text-xs block mt-1">
-                            المعلم: <strong className="text-indigo-600 dark:text-indigo-400">{trainer ? trainer.name : 'غير محدد'}</strong>
-                          </span>
+                          <div className="flex flex-col gap-1 mt-1.5">
+                            <span className="text-slate-500 dark:text-slate-400 text-xs">
+                              المعلم: <strong className="text-indigo-600 dark:text-indigo-400">{trainer ? trainer.name : 'غير محدد'}</strong>
+                            </span>
+                            {g.hall && (
+                              <span className="text-slate-500 dark:text-slate-400 text-[10px] font-bold">
+                                الموقع: <span className="text-slate-700 dark:text-slate-300">{g.hall}</span>
+                              </span>
+                            )}
+                          </div>
                         </div>
 
                         {/* Schedules tags */}
